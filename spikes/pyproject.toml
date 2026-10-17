@@ -1,0 +1,23 @@
+[project]
+name = "docconv-spike"
+version = "0.0.0"
+requires-python = "==3.12.*"
+dependencies = [
+    "docling",
+    "ocrmac",
+    "torch==2.2.2",
+    "torchvision==0.17.2",
+    "numpy<2",
+    "docling-parse<=4.7.2",  # bản cuối có wheel macOS x86_64
+    "easyocr>=1.7.2",
+]
+
+[dependency-groups]
+dev = ["pytest", "reportlab"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
