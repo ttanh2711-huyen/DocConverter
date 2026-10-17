@@ -1,4 +1,5 @@
 import AppKit
+import DocConverterKit
 import SwiftUI
 
 @main
@@ -17,6 +18,14 @@ struct DocConverterApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor let model = AppModel()
+
+    /// Tệp/thư mục được thả lên biểu tượng app hoặc mở bằng "Mở bằng → DocConverter".
+    func application(_ application: NSApplication, open urls: [URL]) {
+        MainActor.assumeIsolated {
+            let recursive = UserDefaults.standard.object(forKey: "includeSubfolders") as? Bool ?? true
+            model.store.add(InputCollector.expand(urls, recursive: recursive))
+        }
+    }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         !MainActor.assumeIsolated { model.store.isRunning }

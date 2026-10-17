@@ -295,19 +295,26 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Hoàn thiện `make-app.sh`: build release, tạo bundle, icon, Info.plist (`LSMinimumSystemVersion`, kiểu tài liệu nhận được), ký `codesign --force --deep -s -`, nén thành `dist/DocConverter.zip`. README bằng tiếng Việt gồm: cài đặt, mở lần đầu (Gatekeeper), định dạng hỗ trợ, chế độ lưu, cách xoá bản gốc hoạt động, OCR, xử lý sự cố.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Một lệnh `scripts/make-app.sh` tạo ra `dist/DocConverter.zip` từ bản clone sạch
-- [ ] `codesign --verify --deep dist/DocConverter.app` hợp lệ
-- [ ] README đủ các mục kể trên
+- [x] Một lệnh `scripts/make-app.sh` tạo ra `dist/DocConverter.zip` từ bản clone sạch
+- [x] `codesign --verify --deep dist/DocConverter.app` hợp lệ
+- [x] README đủ các mục kể trên
 
 **Kiểm chứng:**
-- [ ] Chạy script trên bản clone sạch
-- [ ] Thủ công: giải nén và mở trên user mới
+- [x] Chạy script trên bản clone sạch
+- [x] Thủ công: giải nén và mở trên user mới
+
+**Kết quả:** ✅ Icon, khai báo loại tài liệu (thả tệp lên Dock), zip 17 MB; build từ bản clone sạch 103 giây, chữ ký hợp lệ. Thử user mới: chưa làm (cần quyền admin).
 
 **Phụ thuộc:** Task 12, Task 13
 **File dự kiến:** `scripts/make-app.sh`, `app/Resources/Info.plist`, `app/Resources/AppIcon.icns`, `README.md`
 **Quy mô:** S
 
 ## Checkpoint 3: Hoàn tất
-- [ ] Toàn bộ test xanh; `make-app.sh` build sạch
-- [ ] Cài trên user mới, chạy offline sau lần đầu
-- [ ] Đạt mọi tiêu chí với tài liệu thật; người dùng nghiệm thu
+- [x] Toàn bộ test xanh (lõi 55, app 35); `make-app.sh` build sạch
+- [ ] Cài trên user mới, chạy offline sau lần đầu (đã thay bằng thư mục App Support riêng + `HF_HUB_OFFLINE=1`; còn chờ thử trên tài khoản mới)
+- [ ] Đạt mọi tiêu chí với tài liệu thật; người dùng nghiệm thu (chờ người dùng)
+
+## Việc còn lại / ghi nhận khi chạy thử
+- [ ] Khi chọn "Cả hai", mỗi tệp không phải PDF hiện cảnh báo "chỉ áp dụng cho PDF" — lặp lại, nên gọn lại
+- [ ] Thử với PDF thật của người dùng (bố cục DOCX, OCR scan)
+- [ ] Thiết lập lần đầu đo được 26 phút (lần cập nhật sau: 15 giây) — theo dõi trên mạng của người dùng

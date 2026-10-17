@@ -15,6 +15,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/DocConverter"
 cp "$ROOT/app/Resources/Info.plist" "$APP/Contents/Info.plist"
+cp "$ROOT/app/Resources/AppIcon.icns" "$APP/Contents/Resources/"
 
 # Môi trường Python được tạo ở lần chạy đầu (bootstrap-env.sh) từ các tệp này.
 RES="$APP/Contents/Resources"
@@ -30,4 +31,11 @@ if [[ $DEV == 1 ]]; then
 fi
 
 codesign --force --deep -s - "$APP"
+codesign --verify --deep "$APP"
 echo "Đã tạo $APP"
+
+if [[ $DEV == 0 ]]; then
+  rm -f "$ROOT/dist/DocConverter.zip"
+  ditto -c -k --keepParent "$APP" "$ROOT/dist/DocConverter.zip"
+  echo "Đã tạo $ROOT/dist/DocConverter.zip"
+fi
