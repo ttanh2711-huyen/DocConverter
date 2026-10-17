@@ -87,13 +87,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Đưa phương án đã chốt vào `docx_export.py`. Nếu dùng C+B: PDF có text đi `pdf2docx`, PDF scan đi Docling (OCR) → bộ ghi `python-docx`. Hỗ trợ `--to docx` và `--to md,docx`; Docling chỉ phân tích PDF một lần cho các output cần nó. Nếu bộ ghi B vượt quá ~5 file thì tách 4a (trang, lề, đoạn, heading) và 4b (bảng, ảnh).
 
 **Tiêu chí nghiệm thu:**
-- [ ] DOCX của các PDF mẫu đạt mức điểm đã thống nhất ở Task 2
-- [ ] PDF scan vẫn ra được DOCX (qua OCR); PDF có text đi đúng đường đã chọn
-- [ ] `--to md,docx` tạo đủ cả hai file
+- [x] DOCX của các PDF mẫu đạt mức điểm đã thống nhất ở Task 2
+- [x] PDF scan vẫn ra được DOCX (qua OCR); PDF có text đi đúng đường đã chọn
+- [x] `--to md,docx` tạo đủ cả hai file
 
 **Kiểm chứng:**
-- [ ] `uv run pytest tests/test_pdf_docx.py` (mở bằng `python-docx`: khổ trang và lề khớp PDF ±2 mm, số bảng đúng, có ảnh, có chuỗi tiếng Việt; kiểm tra router text/scan)
-- [ ] Thủ công: so với PDF gốc trong Word/Pages
+- [x] `uv run pytest tests/test_pdf_docx.py` (mở bằng `python-docx`: khổ trang và lề khớp PDF ±2 mm, số bảng đúng, có ảnh, có chuỗi tiếng Việt; kiểm tra router text/scan)
+- [x] Thủ công: so với PDF gốc trong Word/Pages
+
+**Kết quả:** ✅ PDF có text → pdf2docx; scan → Docling OCR → bộ ghi python-docx (`docx_export.py`). Test chạy trong cùng tiến trình (27 s thay vì vài phút).
 
 **Phụ thuộc:** Task 3
 **File dự kiến:** `core/src/docconv/docx_export.py`, `core/src/docconv/pdf_kind.py`, `core/src/docconv/cli.py`, `core/tests/test_pdf_docx.py`

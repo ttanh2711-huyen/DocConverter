@@ -4,9 +4,9 @@ from pathlib import Path
 
 
 def unique(path: Path) -> Path:
-    """`a.md` → `a (1).md`, `a (2).md`… cho tới khi chưa tồn tại (kể cả thư mục ảnh đi kèm)."""
+    """`a.md` → `a (1).md`, `a (2).md`… cho tới khi chưa tồn tại (với .md: cả thư mục ảnh đi kèm)."""
     def taken(p: Path) -> bool:
-        return p.exists() or (p.parent / f"{p.stem}_assets").exists()
+        return p.exists() or (p.suffix == ".md" and (p.parent / f"{p.stem}_assets").exists())
 
     if not taken(path):
         return path

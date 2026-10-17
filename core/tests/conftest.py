@@ -1,3 +1,4 @@
+import io
 import json
 import shutil
 import subprocess
@@ -7,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from docconv import cli
+
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
@@ -14,9 +17,18 @@ def read_text(path: Path) -> str:
     return unicodedata.normalize("NFC", path.read_text(encoding="utf-8"))
 
 
-def run_cli(*args, cwd=None) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "docconv", *map(str, args)],
-                          capture_output=True, text=True, cwd=cwd, timeout=900)
+def run_cli(*args) -> subprocess.CompletedProcess:
+    """Chạy CLI ngay trong tiến trình test để dùng lại mô hình Docling đã nạp."""
+    argv = list(map(str, args))
+    out, err = io.StringIO(), io.StringIO()
+    code = cli.main(argv, out=out, err=err)
+    return subprocess.CompletedProcess(argv, code, out.getvalue(), err.getvalue())
+
+
+def run_cli_process(*args, **kwargs) -> subprocess.Popen:
+    """Chạy CLI như tiến trình riêng (dùng cho test tín hiệu, stdout sạch)."""
+    return subprocess.Popen([sys.executable, "-m", "docconv", *map(str, args)],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, **kwargs)
 
 
 def events(proc: subprocess.CompletedProcess) -> list[dict]:
