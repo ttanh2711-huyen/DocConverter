@@ -88,7 +88,7 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 - [ ] Docling chạy ổn định; **người dùng chọn phương án DOCX** sau khi xem file mẫu
 
 ### Phase 1: Lõi chuyển đổi (CLI)
-- [ ] Task 3: CLI `docconv` + PDF → MD đầu-cuối
+- [x] Task 3: CLI `docconv` + PDF → MD đầu-cuối
 - [ ] Task 4: PDF → DOCX theo phương án đã chọn
 - [ ] Task 5: Định dạng khác → MD bằng markitdown + router
 - [ ] Task 6: Chạy theo lô, thư mục đệ quy, đường dẫn đầu ra, giao thức JSON Lines

@@ -1,0 +1,31 @@
+[project]
+name = "docconv"
+version = "0.1.0"
+description = "Lõi chuyển đổi tài liệu của DocConverter: PDF → Markdown/DOCX (Docling, pdf2docx), định dạng khác → Markdown (markitdown)"
+requires-python = "==3.12.*"
+dependencies = [
+    "docling==2.73.1",
+    "docling-parse<=4.7.2",  # bản cuối có wheel macOS x86_64
+    "torch==2.2.2",          # bản cuối có wheel macOS x86_64
+    "torchvision==0.17.2",
+    "numpy<2",
+    "ocrmac",
+    "easyocr",
+    "pdf2docx",
+    "python-docx",
+    "markitdown[docx,pptx,xlsx,xls,outlook]",
+    "onnxruntime<=1.23.2",   # bản cuối có wheel macOS x86_64 (markitdown → magika)
+]
+
+[project.scripts]
+docconv = "docconv.cli:main"
+
+[dependency-groups]
+dev = ["pytest", "reportlab", "openpyxl", "python-pptx"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

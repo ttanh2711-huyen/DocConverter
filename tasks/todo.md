@@ -68,13 +68,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Tạo `core/` (`src/docconv`) với các phụ thuộc đã ghim từ spike. Lệnh `docconv convert <file> --to md` lưu `.md` cạnh file gốc; ảnh vào `<tên>_assets/` (`ImageRefMode.REFERENCED`). `DocumentConverter` được tạo một lần và dùng lại. Thông báo lỗi bằng tiếng Việt.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Tạo ra `<tên>.md` cùng thư mục ảnh; mã thoát 0
-- [ ] Không ghi đè file có sẵn (thêm hậu tố ` (1)`), trừ khi có `--overwrite`
-- [ ] Đường dẫn chứa dấu tiếng Việt hoặc khoảng trắng vẫn chạy đúng
+- [x] Tạo ra `<tên>.md` cùng thư mục ảnh; mã thoát 0
+- [x] Không ghi đè file có sẵn (thêm hậu tố ` (1)`), trừ khi có `--overwrite`
+- [x] Đường dẫn chứa dấu tiếng Việt hoặc khoảng trắng vẫn chạy đúng
 
 **Kiểm chứng:**
-- [ ] `uv run pytest tests/test_pdf_md.py` (có heading, có bảng, có chuỗi tiếng Việt cụ thể, có thư mục ảnh)
-- [ ] Thủ công: `uv run docconv convert "~/Desktop/Tài liệu.pdf" --to md`
+- [x] `uv run pytest tests/test_pdf_md.py` (có heading, có bảng, có chuỗi tiếng Việt cụ thể, có thư mục ảnh)
+- [x] Thủ công: `uv run docconv convert "~/Desktop/Tài liệu.pdf" --to md`
+
+**Kết quả:** ✅ `core/` với docling 2.73.1, ghim thêm `onnxruntime<=1.23.2` (markitdown → magika, bản cuối có wheel x86_64). Liên kết ảnh trong .md được Docling mã hoá URL (`text_vi%20%281%29_assets/…`), vẫn là Markdown hợp lệ.
 
 **Phụ thuộc:** Checkpoint 0
 **File dự kiến:** `core/pyproject.toml`, `core/src/docconv/cli.py`, `core/src/docconv/pdf_docling.py`, `core/tests/test_pdf_md.py`, `core/tests/fixtures/`
