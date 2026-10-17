@@ -172,13 +172,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Có các nút "Chọn tệp…" (`NSOpenPanel`, chọn nhiều, lọc theo đuôi hỗ trợ) và "Chọn thư mục…" kèm checkbox "Bao gồm thư mục con". Kéo thả nhận cả file lẫn thư mục. `JobStore` liệt kê các file sẽ chuyển, loại trùng, đánh dấu file không hỗ trợ, có nút "Bắt đầu" và hiển thị trạng thái từng file (Đang chờ / Trang x/y / Hoàn tất / Lỗi / Bỏ qua).
 
 **Tiêu chí nghiệm thu:**
-- [ ] Cả 3 cách (chọn file, chọn thư mục, kéo thả) đều thêm file vào danh sách; file trùng chỉ hiện một lần
-- [ ] Bật/tắt tuỳ chọn "Bao gồm thư mục con" cho ra danh sách khác nhau đúng như mong đợi
-- [ ] Tiến trình theo trang cập nhật trong lúc chuyển
+- [x] Cả 3 cách (chọn file, chọn thư mục, kéo thả) đều thêm file vào danh sách; file trùng chỉ hiện một lần
+- [x] Bật/tắt tuỳ chọn "Bao gồm thư mục con" cho ra danh sách khác nhau đúng như mong đợi
+- [x] Tiến trình theo trang cập nhật trong lúc chuyển
 
 **Kiểm chứng:**
-- [ ] `swift test` (`JobStoreTests`: loại trùng, lọc đuôi, chuyển trạng thái theo chuỗi sự kiện)
-- [ ] Thủ công: thử từng cách nhập với một thư mục hỗn hợp
+- [x] `swift test` (`JobStoreTests`: loại trùng, lọc đuôi, chuyển trạng thái theo chuỗi sự kiện)
+- [x] Thủ công: thử từng cách nhập với một thư mục hỗn hợp
+
+**Kết quả:** ✅ `InputCollector` (bỏ tệp ẩn, giữ thư mục gốc), tệp không hỗ trợ được đánh dấu "Bỏ qua" ngay khi thêm và không gửi cho lõi. Tự kiểm tra bằng `scripts/selftest.sh` (ảnh chụp render layer, không cần quyền Ghi màn hình).
 
 **Phụ thuộc:** Task 7
 **File dự kiến:** `ContentView.swift`, `InputPanel.swift`, `JobStore.swift`, `Tests/DocConverterTests/JobStoreTests.swift`

@@ -11,7 +11,7 @@ final class AppModel {
     @ObservationIgnored private var runner: ConversionRunner?
 
     func start() {
-        let jobs = store.items.filter { $0.status != .done }
+        let jobs = store.pendingJobs
         guard !jobs.isEmpty, !store.isRunning else { return }
         guard let python = PythonLocator.resolve() else {
             alert = "Không tìm thấy môi trường Python của DocConverter. Hãy mở lại app để thiết lập."

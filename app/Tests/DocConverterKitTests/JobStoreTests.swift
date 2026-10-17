@@ -10,7 +10,7 @@ func ev(_ json: String) -> ConversionEvent {
 @Test @MainActor func appliesEventSequenceToJobs() {
     let store = JobStore()
     store.add(files: [URL(fileURLWithPath: "/Users/a/Tài liệu/x.pdf"), URL(fileURLWithPath: "/Users/a/Tài liệu/cu.doc")])
-    #expect(store.items.map(\.status) == [.pending, .pending])
+    #expect(store.items.map(\.status) == [.pending, .skipped("Không hỗ trợ định dạng .doc")])
 
     for line in protocolSample.split(separator: "\n").prefix(2) { store.apply(ev(String(line))) }
     #expect(store.items[0].status == .running("Đang phân tích bố cục (2 trang)"))

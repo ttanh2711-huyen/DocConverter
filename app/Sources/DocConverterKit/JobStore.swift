@@ -44,10 +44,35 @@ public final class JobStore {
 
     public init() {}
 
-    public func add(files: [URL], base: URL? = nil) {
-        let existing = Set(items.map(\.id))
-        for url in files.map(\.standardizedFileURL) where !existing.contains(url.path) {
-            items.append(JobItem(url: url, base: base ?? url.deletingLastPathComponent()))
+    public func add(files: [URL]) {
+        add(files.map { InputEntry(url: $0.standardizedFileURL, base: $0.standardizedFileURL.deletingLastPathComponent()) })
+    }
+
+    public func add(_ entries: [InputEntry]) {
+        var existing = Set(items.map(\.id))
+        for entry in entries where !existing.contains(entry.url.path) {
+            existing.insert(entry.url.path)
+            var item = JobItem(url: entry.url, base: entry.base)
+            if !entry.supported {
+                let ext = entry.url.pathExtension.isEmpty ? "(không có đuôi)" : ".\(entry.url.pathExtension)"
+                item.status = .skipped("Không hỗ trợ định dạng \(ext)")
+            }
+            items.append(item)
+        }
+    }
+
+    public func remove(_ id: JobItem.ID) {
+        guard !isRunning else { return }
+        items.removeAll { $0.id == id }
+    }
+
+    /// Các tệp sẽ gửi cho lõi ở lần chạy tới.
+    public var pendingJobs: [JobItem] {
+        items.filter {
+            switch $0.status {
+            case .done, .skipped: false
+            default: true
+            }
         }
     }
 
@@ -63,8 +88,11 @@ public final class JobStore {
 
     public func markStarted() {
         isRunning = true
-        for i in items.indices where items[i].isFinished && items[i].status != .done {
-            items[i].status = .pending  // chạy lại các tệp lỗi/huỷ
+        for i in items.indices {
+            switch items[i].status {
+            case .failed, .cancelled: items[i].status = .pending  // chạy lại các tệp lỗi/huỷ
+            default: break
+            }
         }
     }
 
