@@ -13,24 +13,49 @@
 2. **Lần mở đầu tiên:** app chỉ được ký tại chỗ (ad-hoc), nên macOS sẽ chặn nếu bạn bấm đúp. Hãy **bấm chuột phải vào app → Mở → Mở**. Nếu vẫn bị chặn, vào **Cài đặt hệ thống → Quyền riêng tư & Bảo mật**, kéo xuống và bấm **Vẫn mở**.
 3. Màn hình **Chuẩn bị DocConverter** hiện ra. Bấm **Bắt đầu thiết lập**. App sẽ tải Python 3.12, các thư viện chuyển đổi và mô hình nhận dạng (khoảng 2–3 GB) vào `~/Library/Application Support/DocConverter/`. Bước này cần mạng và có thể mất từ vài phút đến hơn 20 phút tuỳ tốc độ mạng. Chỉ phải làm một lần; sau đó app chạy được khi không có mạng.
 
+## Giao diện
+
+```
+┌ Thanh công cụ ───────────────────────────────────────────────────────────┐
+│ [+ Thêm ▾]  DocConverter                       [⊖ Xoá mục] [⌫ Xoá hết] [▣] │
+├───────────────────────────────────────────────┬──────────────────────────┤
+│ Danh sách tệp                                 │ Tuỳ chọn                 │
+│  icon  Tên tệp                    🔍  [Hoàn tất] │  Đầu ra cho PDF          │
+│        thư mục / bước đang làm / kết quả         │  Nơi lưu                 │
+│  …                                              │  Xử lý tệp               │
+│ (danh sách trống: vùng kéo thả lớn)             │  Nhận dạng chữ           │
+├───────────────────────────────────────────────┤                          │
+│ 8 tệp ● 7 hoàn tất ● 1 bỏ qua   ↳ Lưu…   [▶ Bắt đầu] │                    │
+└───────────────────────────────────────────────┴──────────────────────────┘
+```
+
+| Phím tắt | Thao tác |
+|---|---|
+| ⌘O / ⇧⌘O | Thêm tệp / thêm thư mục |
+| ⌘R hoặc ↩ | Bắt đầu |
+| ⌘. hoặc Esc | Huỷ |
+| ⌫ / ⇧⌘⌫ | Xoá mục đã chọn / xoá cả danh sách |
+| ⌥⌘I | Ẩn/hiện bảng tuỳ chọn |
+| Bấm đúp một dòng | Hiện kết quả trong Finder |
+
 ## Sử dụng
 
 1. Thêm tài liệu bằng một trong các cách:
-   - nút **Chọn tệp…**;
-   - nút **Chọn thư mục…** (bật **Bao gồm thư mục con** để lấy cả thư mục con);
+   - nút **+ Thêm** trên thanh công cụ (bấm: chọn tệp; mũi tên ▾: chọn thư mục), hoặc các nút ở giữa màn hình khi danh sách trống;
+   - thư mục: bật **Bao gồm thư mục con** (bảng Tuỳ chọn → Xử lý tệp) để lấy cả thư mục con;
    - kéo thả tệp/thư mục vào cửa sổ hoặc lên biểu tượng app.
    Tệp ẩn bị bỏ qua. Định dạng không hỗ trợ (ví dụ `.doc`, `.ppt` đời cũ) hiện là **Bỏ qua**.
-2. Chọn **Định dạng cho PDF**: Markdown, Word hoặc Cả hai. Các tệp khác luôn được chuyển sang Markdown.
-3. Chọn **Lưu vào**:
+2. Trong bảng **Tuỳ chọn** bên phải, chọn **Đầu ra cho PDF**: Markdown, Word hoặc Cả hai. Các tệp khác luôn được chuyển sang Markdown.
+3. Chọn **Nơi lưu**:
    - **Cạnh tệp gốc**: kết quả nằm cùng thư mục với tệp gốc.
    - **Thư mục khác**: kết quả nằm trong thư mục bạn chọn và **giữ nguyên cấu trúc thư mục con** của thư mục đầu vào.
-4. Bấm **Bắt đầu**. Mỗi tệp hiện trạng thái riêng. Bấm 🔍 để hiện kết quả trong Finder, hoặc ⓘ để xem chi tiết lỗi. **Huỷ** dừng ngay và không để lại tệp dở dang.
+4. Bấm **Bắt đầu** ở góc dưới bên phải. Mỗi tệp có nhãn trạng thái riêng, thanh dưới cùng hiện tiến độ tổng. Bấm 🔍 (hoặc bấm đúp dòng) để hiện kết quả trong Finder, ⓘ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
 
 Tên kết quả không bao giờ ghi đè tệp có sẵn: nếu `a.md` đã tồn tại, app tạo `a (1).md`. Ảnh trong tệp Markdown nằm trong thư mục `<tên>_assets/` bên cạnh.
 
 ### Xoá tệp gốc
 
-Tuỳ chọn **Xoá tệp gốc sau khi chuyển thành công (đưa vào Thùng rác)** mặc định **tắt**. Khi bật (app hỏi xác nhận ở lần đầu), tệp gốc chỉ được chuyển vào **Thùng rác** (khôi phục được) khi tất cả các điều kiện sau đều đúng:
+Tuỳ chọn **Đưa tệp gốc vào Thùng rác** (bảng Tuỳ chọn → Xử lý tệp) mặc định **tắt**. Khi bật (app hỏi xác nhận ở lần đầu), tệp gốc chỉ được chuyển vào **Thùng rác** (khôi phục được) khi tất cả các điều kiện sau đều đúng:
 
 - tệp đó chuyển **thành công**;
 - **mọi** định dạng đã yêu cầu đều đã được tạo và không rỗng (ví dụ chọn "Cả hai" thì phải có cả `.md` lẫn `.docx`);
@@ -38,7 +63,7 @@ Tuỳ chọn **Xoá tệp gốc sau khi chuyển thành công (đưa vào Thùng
 
 Tệp lỗi, bị huỷ, bị bỏ qua hoặc chuyển chưa đủ luôn được giữ nguyên.
 
-### Cài đặt (⌘,)
+### Nhận dạng chữ (bảng Tuỳ chọn, hoặc Cài đặt ⌘,)
 
 - **Nhận dạng chữ (OCR)**:
   - *Tự động*: chỉ OCR trang không có chữ.

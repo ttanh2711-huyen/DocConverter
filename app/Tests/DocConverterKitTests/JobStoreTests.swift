@@ -55,3 +55,21 @@ func ev(_ json: String) -> ConversionEvent {
     item.outputs = ["x.md", "x_assets", "x.docx", "da_xoa.md"].map { dir.appendingPathComponent($0) }
     #expect(item.revealTargets.map(\.lastPathComponent) == ["x.md", "x.docx"])
 }
+
+@Test @MainActor func summaryCountsAndProgress() {
+    let store = JobStore()
+    store.add(files: ["/a/1.pdf", "/a/2.pdf", "/a/3.xlsx", "/a/4.doc"].map { URL(fileURLWithPath: $0) })
+    #expect(store.summary == JobStore.Summary(total: 4, done: 0, failed: 0, skipped: 1, cancelled: 0, active: 3))
+    #expect(store.progress == 0)
+    store.apply(ev(#"{"event":"done","file":"/a/1.pdf","outputs":[],"seconds":1}"#))
+    store.apply(ev(#"{"event":"error","file":"/a/2.pdf","message":"x","detail":"y"}"#))
+    #expect(store.summary.done == 1 && store.summary.failed == 1 && store.summary.active == 1)
+    #expect(store.progress == 2.0 / 3.0)
+}
+
+@Test @MainActor func removeManyKeepsOthers() {
+    let store = JobStore()
+    store.add(files: ["/a/1.pdf", "/a/2.pdf", "/a/3.pdf"].map { URL(fileURLWithPath: $0) })
+    store.remove(Set(["/a/1.pdf", "/a/3.pdf"]))
+    #expect(store.items.map(\.url.lastPathComponent) == ["2.pdf"])
+}

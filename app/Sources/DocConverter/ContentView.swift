@@ -1,22 +1,18 @@
-import AppKit
 import DocConverterKit
 import SwiftUI
-import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Bindable var model: AppModel
-    @AppStorage("includeSubfolders") private var includeSubfolders = true
-    @State private var dropTargeted = false
 
     var body: some View {
         Group {
-            if case .ready = model.environment.state {
-                main
+            if model.isReady {
+                MainView(model: model)
             } else {
                 SetupView(environment: model.environment)
             }
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 860, minHeight: 540)
         .task { await model.environment.refresh() }
         .onChange(of: model.environment.state) { _, state in
             switch state {
@@ -24,43 +20,6 @@ struct ContentView: View {
             case .needsSetup: SelfTest.snapshotSetupScreen()
             default: break
             }
-        }
-    }
-
-    private var main: some View {
-        VStack(spacing: 0) {
-            InputPanel(store: model.store)
-                .padding(12)
-            Divider()
-            OutputOptionsView()
-                .disabled(model.store.isRunning)
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Divider()
-            JobListView(store: model.store)
-                .overlay {
-                    if dropTargeted {
-                        RoundedRectangle(cornerRadius: 8).strokeBorder(Color.accentColor, lineWidth: 3).padding(4)
-                    }
-                }
-                .dropDestination(for: URL.self) { urls, _ in
-                    guard !model.store.isRunning else { return false }
-                    model.store.add(InputCollector.expand(urls, recursive: includeSubfolders))
-                    return true
-                } isTargeted: { dropTargeted = $0 }
-            Divider()
-            HStack {
-                Spacer()
-                if model.store.isRunning {
-                    ProgressView().controlSize(.small)
-                    Button("Huỷ", role: .cancel) { model.cancel() }
-                } else {
-                    Button("Bắt đầu") { model.start() }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(model.store.pendingJobs.isEmpty)
-                }
-            }
-            .padding(12)
         }
         .alert("Không thể chuyển đổi", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("Đóng", role: .cancel) {}
@@ -70,94 +29,70 @@ struct ContentView: View {
     }
 }
 
-struct JobListView: View {
-    let store: JobStore
+/// Bố cục chính: danh sách tệp ở giữa, bảng tuỳ chọn bên phải, thanh trạng thái phía dưới.
+struct MainView: View {
+    @Bindable var model: AppModel
+    @State private var dropTargeted = false
 
     var body: some View {
-        if store.items.isEmpty {
-            ContentUnavailableView("Kéo thả tệp hoặc thư mục vào đây",
-                                   systemImage: "arrow.down.doc",
-                                   description: Text("PDF → Markdown/Word; Word, Excel, PowerPoint, HTML… → Markdown"))
-        } else {
-            List(store.items) { item in
-                JobRow(item: item)
-                    .contextMenu {
-                        Button("Xoá khỏi danh sách") { store.remove(item.id) }
-                            .disabled(store.isRunning)
-                    }
-            }
-        }
-    }
-}
-
-struct JobRow: View {
-    let item: JobItem
-    @State private var showDetail = false
-
-    var body: some View {
-        HStack(spacing: 10) {
-            statusIcon.frame(width: 18)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(displayName).lineLimit(1).truncationMode(.middle)
-                Text(statusText).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            }
-            Spacer()
-            if !item.revealTargets.isEmpty {
-                Button("Hiện trong Finder", systemImage: "magnifyingglass") {
-                    NSWorkspace.shared.activateFileViewerSelecting(item.revealTargets)
-                }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .help("Hiện tệp kết quả trong Finder")
-            }
-            if item.detail != nil {
-                Button("Chi tiết lỗi", systemImage: "info.circle") { showDetail = true }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.borderless)
-                    .help("Xem chi tiết lỗi")
-                    .popover(isPresented: $showDetail, arrowEdge: .leading) {
-                        ScrollView {
-                            Text(item.detail ?? "")
-                                .font(.system(.caption, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
+        VStack(spacing: 0) {
+            Group {
+                if model.store.items.isEmpty {
+                    EmptyDropView(model: model, targeted: dropTargeted)
+                } else {
+                    JobListView(model: model)
+                        .overlay {
+                            if dropTargeted {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(Color.accentColor, lineWidth: 2)
+                                    .background(Color.accentColor.opacity(0.06), in: .rect(cornerRadius: 10))
+                                    .padding(6)
+                                    .allowsHitTesting(false)
+                            }
                         }
-                        .frame(width: 480, height: 240)
-                    }
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .dropDestination(for: URL.self) { urls, _ in
+                guard !model.store.isRunning else { return false }
+                model.add(urls)
+                return true
+            } isTargeted: { dropTargeted = $0 }
+
+            Divider()
+            StatusBar(model: model)
         }
-        .padding(.vertical, 2)
-    }
-
-    /// Tên tệp, kèm thư mục con tương đối nếu tệp nằm sâu trong thư mục đã chọn.
-    private var displayName: String {
-        let parent = item.url.deletingLastPathComponent().path
-        guard parent != item.base.path, parent.hasPrefix(item.base.path + "/") else { return item.url.lastPathComponent }
-        return String(item.url.path.dropFirst(item.base.path.count + 1))
-    }
-
-    private var statusText: String {
-        switch item.status {
-        case .pending: "Đang chờ"
-        case .running(let message): message
-        case .done:
-            ["Hoàn tất", item.sourceTrashed ? "đã đưa tệp gốc vào Thùng rác" : nil, item.note]
-                .compactMap { $0 }.joined(separator: " · ")
-        case .failed(let message): message
-        case .skipped(let message): message
-        case .cancelled: "Đã huỷ"
+        .navigationTitle("DocConverter")
+        .toolbar { toolbar }
+        .inspector(isPresented: $model.showInspector) {
+            OptionsInspector()
+                .disabled(model.store.isRunning)
+                .inspectorColumnWidth(min: 280, ideal: 310, max: 380)
         }
     }
 
-    @ViewBuilder private var statusIcon: some View {
-        switch item.status {
-        case .pending: Image(systemName: "clock").foregroundStyle(.secondary)
-        case .running: ProgressView().controlSize(.small)
-        case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-        case .failed: Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
-        case .skipped: Image(systemName: "forward.fill").foregroundStyle(.secondary)
-        case .cancelled: Image(systemName: "xmark.circle").foregroundStyle(.secondary)
+    @ToolbarContentBuilder private var toolbar: some ToolbarContent {
+        ToolbarItemGroup(placement: .navigation) {
+            Menu {
+                Button("Chọn tệp…", systemImage: "doc") { model.chooseFiles() }
+                Button("Chọn thư mục…", systemImage: "folder") { model.chooseFolders() }
+            } label: {
+                Label("Thêm", systemImage: "plus")
+            } primaryAction: {
+                model.chooseFiles()
+            }
+            .help("Thêm tệp (⌘O). Giữ để chọn thư mục (⇧⌘O)")
+            .disabled(model.store.isRunning)
+        }
+        ToolbarItemGroup(placement: .primaryAction) {
+            Button("Xoá mục đã chọn", systemImage: "minus.circle") { model.removeSelected() }
+                .help("Xoá các tệp đã chọn khỏi danh sách (⌫)")
+                .disabled(model.selection.isEmpty || model.store.isRunning)
+            Button("Xoá danh sách", systemImage: "xmark.bin") { model.clearList() }
+                .help("Xoá toàn bộ danh sách (⇧⌘⌫)")
+                .disabled(!model.canEditList)
+            Button("Tuỳ chọn", systemImage: "sidebar.right") { model.showInspector.toggle() }
+                .help("Ẩn/hiện bảng tuỳ chọn (⌥⌘I)")
         }
     }
 }

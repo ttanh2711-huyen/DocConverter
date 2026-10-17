@@ -10,6 +10,9 @@ struct DocConverterApp: App {
         Window("DocConverter", id: "main") {
             ContentView(model: delegate.model)
         }
+        .windowToolbarStyle(.unified)
+        .defaultSize(width: 1040, height: 660)
+        .commands { AppCommands(model: delegate.model) }
         Settings {
             SettingsView()
         }
@@ -47,6 +50,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 sender.reply(toApplicationShouldTerminate: true)
             }
             return .terminateLater
+        }
+    }
+}
+
+/// Menu và phím tắt.
+struct AppCommands: Commands {
+    let model: AppModel
+
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            Button("Thêm tệp…") { model.chooseFiles() }
+                .keyboardShortcut("o")
+                .disabled(model.store.isRunning || !model.isReady)
+            Button("Thêm thư mục…") { model.chooseFolders() }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                .disabled(model.store.isRunning || !model.isReady)
+        }
+        CommandMenu("Chuyển đổi") {
+            Button("Bắt đầu") { model.start() }
+                .keyboardShortcut("r")
+                .disabled(!model.canStart)
+            Button("Huỷ") { model.cancel() }
+                .keyboardShortcut(".")
+                .disabled(!model.store.isRunning)
+            Divider()
+            Button("Xoá mục đã chọn") { model.removeSelected() }
+                .keyboardShortcut(.delete, modifiers: [])
+                .disabled(model.selection.isEmpty || model.store.isRunning)
+            Button("Xoá danh sách") { model.clearList() }
+                .keyboardShortcut(.delete, modifiers: [.command, .shift])
+                .disabled(!model.canEditList)
+        }
+        CommandGroup(before: .sidebar) {
+            Button(model.showInspector ? "Ẩn tuỳ chọn" : "Hiện tuỳ chọn") { model.showInspector.toggle() }
+                .keyboardShortcut("i", modifiers: [.command, .option])
+            Divider()
         }
     }
 }

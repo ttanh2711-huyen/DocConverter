@@ -8,7 +8,8 @@ import DocConverterKit
 ///   DOCCONV_TEST_CANCEL_AFTER=3          bấm "Huỷ" sau 3 giây
 ///   DOCCONV_TEST_OCR=auto|off|force, DOCCONV_TEST_OCR_ENGINE=ocrmac|easyocr
 ///   DOCCONV_TEST_TRASH=1                 bật "Xoá tệp gốc" cho lần chạy này
-///   DOCCONV_TEST_SNAPSHOT=/tmp/x.png    khi xong, chụp cửa sổ ra PNG rồi thoát
+///   DOCCONV_TEST_SNAPSHOT=/tmp/x.png    khi xong, chụp cửa sổ ra PNG rồi thoát (không có FILES: chụp màn hình trống)
+///   DOCCONV_TEST_SNAPSHOT_RUNNING=/tmp/r.png  chụp khi đang chạy (sau DOCCONV_TEST_RUNNING_AFTER giây, mặc định 6)
 @MainActor
 enum SelfTest {
     static let env = ProcessInfo.processInfo.environment
@@ -16,7 +17,19 @@ enum SelfTest {
     private static var started = false
 
     static func run(_ model: AppModel) {
-        guard let files = env["DOCCONV_TEST_FILES"], !started else { return }
+        guard !started else { return }
+        guard let files = env["DOCCONV_TEST_FILES"] else {
+            // Chỉ chụp màn hình trống.
+            if let path = env["DOCCONV_TEST_SNAPSHOT"] {
+                started = true
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(1200))
+                    snapshot(to: URL(fileURLWithPath: path))
+                    NSApp.terminate(nil)
+                }
+            }
+            return
+        }
         started = true
         let urls = files.split(separator: ":").map { URL(fileURLWithPath: String($0)) }
         model.store.add(InputCollector.expand(urls, recursive: env["DOCCONV_TEST_RECURSIVE"] != "0"))
@@ -30,6 +43,12 @@ enum SelfTest {
         model.optionsOverride = options
         model.trashOriginalsOverride = env["DOCCONV_TEST_TRASH"] == "1"
         model.start()
+        if let path = env["DOCCONV_TEST_SNAPSHOT_RUNNING"] {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(Double(env["DOCCONV_TEST_RUNNING_AFTER"] ?? "6") ?? 6))
+                snapshot(to: URL(fileURLWithPath: path))
+            }
+        }
         if let after = env["DOCCONV_TEST_CANCEL_AFTER"].flatMap(Double.init) {
             Task { @MainActor in
                 try? await Task.sleep(for: .seconds(after))

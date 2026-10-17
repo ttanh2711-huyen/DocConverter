@@ -62,8 +62,39 @@ public final class JobStore {
     }
 
     public func remove(_ id: JobItem.ID) {
+        remove([id])
+    }
+
+    public func remove(_ ids: Set<JobItem.ID>) {
         guard !isRunning else { return }
-        items.removeAll { $0.id == id }
+        items.removeAll { ids.contains($0.id) }
+    }
+
+    public struct Summary: Equatable, Sendable {
+        public var total = 0, done = 0, failed = 0, skipped = 0, cancelled = 0
+        /// Đang chờ hoặc đang chạy.
+        public var active = 0
+    }
+
+    public var summary: Summary {
+        var s = Summary(total: items.count)
+        for item in items {
+            switch item.status {
+            case .done: s.done += 1
+            case .failed: s.failed += 1
+            case .skipped: s.skipped += 1
+            case .cancelled: s.cancelled += 1
+            case .pending, .running: s.active += 1
+            }
+        }
+        return s
+    }
+
+    /// Tỉ lệ đã xử lý xong trên số tệp cần xử lý (không tính tệp bỏ qua).
+    public var progress: Double {
+        let s = summary
+        let workload = s.total - s.skipped
+        return workload == 0 ? 0 : Double(s.done + s.failed + s.cancelled) / Double(workload)
     }
 
     /// Các tệp sẽ gửi cho lõi ở lần chạy tới.
