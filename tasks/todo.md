@@ -191,13 +191,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Chọn định dạng cho PDF (Markdown / Word / Cả hai). Chọn nơi lưu: "Cạnh tệp gốc" hoặc "Thư mục khác…" (giữ cấu trúc thư mục con), và hiện nơi lưu đang chọn. Truyền đúng `--out-mode/--out/--base` cho CLI. Các lựa chọn được ghi nhớ qua `@AppStorage`.
 
 **Tiêu chí nghiệm thu:**
-- [ ] "Cạnh tệp gốc": output nằm cùng thư mục với từng file gốc
-- [ ] "Thư mục khác": output nằm trong thư mục đã chọn với đúng cấu trúc thư mục con
-- [ ] Mở lại app vẫn giữ định dạng và nơi lưu đã chọn
+- [x] "Cạnh tệp gốc": output nằm cùng thư mục với từng file gốc
+- [x] "Thư mục khác": output nằm trong thư mục đã chọn với đúng cấu trúc thư mục con
+- [x] Mở lại app vẫn giữ định dạng và nơi lưu đã chọn
 
 **Kiểm chứng:**
-- [ ] `swift test` (`ArgumentsTests`: dựng đúng tham số CLI cho từng tổ hợp tuỳ chọn)
-- [ ] Thủ công: chạy cùng một thư mục với hai chế độ, so sánh kết quả
+- [x] `swift test` (`ArgumentsTests`: dựng đúng tham số CLI cho từng tổ hợp tuỳ chọn)
+- [x] Thủ công: chạy cùng một thư mục với hai chế độ, so sánh kết quả
+
+**Kết quả:** ✅ 19 test Swift xanh; tự kiểm tra lưu vào thư mục khác giữ đúng `Phường Tân An/thong_ke.md`. App không sandbox nên không cần security-scoped bookmark.
 
 **Phụ thuộc:** Task 8
 **File dự kiến:** `OutputOptionsView.swift`, `ConversionRunner.swift`, `AppSettings.swift`, `Tests/DocConverterTests/ArgumentsTests.swift`

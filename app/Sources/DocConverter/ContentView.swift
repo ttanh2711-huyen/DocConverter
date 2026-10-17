@@ -12,6 +12,11 @@ struct ContentView: View {
             InputPanel(store: model.store)
                 .padding(12)
             Divider()
+            OutputOptionsView()
+                .disabled(model.store.isRunning)
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Divider()
             JobListView(store: model.store)
                 .overlay {
                     if dropTargeted {
@@ -37,7 +42,7 @@ struct ContentView: View {
             }
             .padding(12)
         }
-        .frame(minWidth: 640, minHeight: 420)
+        .frame(minWidth: 720, minHeight: 480)
         .task { SelfTest.run(model) }
         .alert("Không thể chuyển đổi", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("Đóng", role: .cancel) {}

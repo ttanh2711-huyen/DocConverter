@@ -1,0 +1,38 @@
+import Foundation
+import Testing
+@testable import DocConverterKit
+
+@Test(arguments: [
+    (ConversionOptions.PDFFormat.markdown, "md"),
+    (.word, "docx"),
+    (.both, "md,docx"),
+])
+func formatArgument(format: ConversionOptions.PDFFormat, expected: String) {
+    let args = ConversionOptions(pdfFormat: format).arguments
+    #expect(args.starts(with: ["--to", expected]))
+}
+
+@Test func besideSourceIsDefault() {
+    #expect(ConversionOptions().arguments == ["--to", "md", "--out-mode", "beside"])
+}
+
+@Test func customFolderPassesOutPath() {
+    let options = ConversionOptions(pdfFormat: .both, location: .folder(URL(fileURLWithPath: "/Users/a/Kết quả")))
+    #expect(options.arguments == ["--to", "md,docx", "--out-mode", "dir", "--out", "/Users/a/Kết quả"])
+}
+
+@Test func manifestCarriesBaseForStructure() throws {
+    var item = JobItem(url: URL(fileURLWithPath: "/in/sub/x.pdf"), base: URL(fileURLWithPath: "/in"))
+    item.status = .pending
+    let data = ConversionOptions.manifest(for: [item])
+    let list = try JSONSerialization.jsonObject(with: data) as! [[String: String]]
+    #expect(list == [["src": "/in/sub/x.pdf", "base": "/in"]])
+}
+
+@Test func optionsRoundTripThroughUserDefaults() throws {
+    let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+    #expect(ConversionOptions.load(from: defaults) == ConversionOptions())
+    let options = ConversionOptions(pdfFormat: .word, location: .folder(URL(fileURLWithPath: "/tmp/Đầu ra")))
+    options.save(to: defaults)
+    #expect(ConversionOptions.load(from: defaults) == options)
+}

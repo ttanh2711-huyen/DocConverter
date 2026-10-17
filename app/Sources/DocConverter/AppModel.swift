@@ -6,7 +6,8 @@ import Observation
 @MainActor @Observable
 final class AppModel {
     let store = JobStore()
-    var options = ConversionOptions()
+    /// Chỉ dùng cho chế độ tự kiểm tra; bình thường đọc tuỳ chọn người dùng đã lưu.
+    var optionsOverride: ConversionOptions?
     var alert: String?
     @ObservationIgnored private var runner: ConversionRunner?
 
@@ -15,6 +16,11 @@ final class AppModel {
         guard !jobs.isEmpty, !store.isRunning else { return }
         guard let python = PythonLocator.resolve() else {
             alert = "Không tìm thấy môi trường Python của DocConverter. Hãy mở lại app để thiết lập."
+            return
+        }
+        let options = optionsOverride ?? ConversionOptions.load()
+        if case .folder(let url) = options.location, !FileManager.default.fileExists(atPath: url.path) {
+            alert = "Thư mục lưu kết quả không tồn tại: \(url.path)"
             return
         }
         let runner = ConversionRunner(python: python)
