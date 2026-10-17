@@ -106,13 +106,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** `router.py` chọn bộ chuyển theo đuôi file: `.pdf` đi Docling/DOCX như Task 4, các đuôi hỗ trợ đi markitdown (`markitdown[docx,pptx,xlsx,xls,outlook]` và HTML, CSV, JSON, XML, EPUB, ZIP, ảnh). Định dạng không hỗ trợ trả lỗi rõ ràng. File không phải PDF chỉ cho phép `md`.
 
 **Tiêu chí nghiệm thu:**
-- [ ] DOCX, XLSX, PPTX, HTML, CSV trong fixtures chuyển ra `.md` đúng nội dung (XLSX thành bảng Markdown)
-- [ ] File không hỗ trợ: mã thoát ≠ 0, thông báo "Không hỗ trợ định dạng .doc"
-- [ ] Yêu cầu `docx` cho file không phải PDF: bỏ qua kèm cảnh báo, vẫn tạo `.md`
+- [x] DOCX, XLSX, PPTX, HTML, CSV trong fixtures chuyển ra `.md` đúng nội dung (XLSX thành bảng Markdown)
+- [x] File không hỗ trợ: mã thoát ≠ 0, thông báo "Không hỗ trợ định dạng .doc"
+- [x] Yêu cầu `docx` cho file không phải PDF: bỏ qua kèm cảnh báo, vẫn tạo `.md`
 
 **Kiểm chứng:**
-- [ ] `uv run pytest tests/test_markitdown.py tests/test_router.py`
-- [ ] Thủ công: một file Excel thật có tiếng Việt
+- [x] `uv run pytest tests/test_markitdown.py tests/test_router.py`
+- [x] Thủ công: một file Excel thật có tiếng Việt
+
+**Kết quả:** ✅ 36 test xanh (28 s).
 
 **Phụ thuộc:** Task 3; song song được với Task 4
 **File dự kiến:** `core/src/docconv/router.py`, `core/src/docconv/markitdown_conv.py`, `core/tests/test_markitdown.py`, `core/tests/test_router.py`
