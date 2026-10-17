@@ -229,22 +229,24 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Nút "Huỷ" gửi SIGTERM tới tiến trình con. Lỗi từng file hiển thị dễ đọc bằng tiếng Việt, có phần "Chi tiết" (stderr). Có nút "Hiện trong Finder" cho output. Thoát app khi đang chạy thì hỏi xác nhận và dừng tiến trình con.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Huỷ: các job đang chạy hoặc đang chờ chuyển sang "Đã huỷ", không còn tiến trình python chạy ngầm, không có file dở dang, không xoá bản gốc nào
-- [ ] File hỏng hiện thông báo dễ hiểu
-- [ ] "Hiện trong Finder" chọn đúng file output
+- [x] Huỷ: các job đang chạy hoặc đang chờ chuyển sang "Đã huỷ", không còn tiến trình python chạy ngầm, không có file dở dang, không xoá bản gốc nào
+- [x] File hỏng hiện thông báo dễ hiểu
+- [x] "Hiện trong Finder" chọn đúng file output
 
 **Kiểm chứng:**
-- [ ] Thủ công: huỷ một PDF dài, rồi `pgrep -f docconv` không trả về gì
-- [ ] Thủ công: thả một file `.pdf` giả (đổi đuôi từ `.txt`)
+- [x] Thủ công: huỷ một PDF dài, rồi `pgrep -f docconv` không trả về gì
+- [x] Thủ công: thả một file `.pdf` giả (đổi đuôi từ `.txt`)
+
+**Kết quả:** ✅ 28 test Swift; tự kiểm tra huỷ giữa chừng 2 PDF scan: "Đã huỷ", không còn tiến trình/tệp dở dang.
 
 **Phụ thuộc:** Task 10
 **File dự kiến:** `ConversionRunner.swift`, `JobStore.swift`, `ContentView.swift`
 **Quy mô:** S
 
 ## Checkpoint 2: App dùng được hằng ngày (bản dev)
-- [ ] `uv run pytest` và `swift test` xanh
-- [ ] Luồng đầy đủ: nhập (3 cách) → chọn định dạng và nơi lưu → chuyển → (xoá gốc) → mở file
-- [ ] Người dùng dùng thử với tài liệu công việc thật
+- [x] `uv run pytest` và `swift test` xanh
+- [x] Luồng đầy đủ: nhập (3 cách) → chọn định dạng và nơi lưu → chuyển → (xoá gốc) → mở file
+- [ ] Người dùng dùng thử với tài liệu công việc thật (chờ người dùng)
 
 ---
 

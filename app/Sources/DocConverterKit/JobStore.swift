@@ -138,3 +138,13 @@ public final class JobStore {
         isRunning = false
     }
 }
+
+extension JobItem {
+    /// Các tệp kết quả còn tồn tại để chọn trong Finder (bỏ thư mục ảnh đi kèm).
+    public var revealTargets: [URL] {
+        outputs.filter {
+            var isDir: ObjCBool = false
+            return FileManager.default.fileExists(atPath: $0.path, isDirectory: &isDir) && !isDir.boolValue
+        }
+    }
+}

@@ -1,3 +1,4 @@
+import AppKit
 import DocConverterKit
 import SwiftUI
 import UniformTypeIdentifiers
@@ -74,6 +75,7 @@ struct JobListView: View {
 
 struct JobRow: View {
     let item: JobItem
+    @State private var showDetail = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -83,6 +85,30 @@ struct JobRow: View {
                 Text(statusText).font(.caption).foregroundStyle(.secondary).lineLimit(2)
             }
             Spacer()
+            if !item.revealTargets.isEmpty {
+                Button("Hiện trong Finder", systemImage: "magnifyingglass") {
+                    NSWorkspace.shared.activateFileViewerSelecting(item.revealTargets)
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .help("Hiện tệp kết quả trong Finder")
+            }
+            if item.detail != nil {
+                Button("Chi tiết lỗi", systemImage: "info.circle") { showDetail = true }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Xem chi tiết lỗi")
+                    .popover(isPresented: $showDetail, arrowEdge: .leading) {
+                        ScrollView {
+                            Text(item.detail ?? "")
+                                .font(.system(.caption, design: .monospaced))
+                                .textSelection(.enabled)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding()
+                        }
+                        .frame(width: 480, height: 240)
+                    }
+            }
         }
         .padding(.vertical, 2)
     }

@@ -48,3 +48,10 @@ func ev(_ json: String) -> ConversionEvent {
     #expect(store.items[0].status == .failed("Tiến trình chuyển đổi dừng bất thường (mã 1)"))
     #expect(store.items[0].detail == "Traceback… MemoryError")
 }
+
+@Test func revealTargetsAreExistingFilesNotAssetFolders() throws {
+    let dir = try makeTree(["x.md", "x.docx", "x_assets/img.png"])
+    var item = JobItem(url: dir.appendingPathComponent("x.pdf"), base: dir)
+    item.outputs = ["x.md", "x_assets", "x.docx", "da_xoa.md"].map { dir.appendingPathComponent($0) }
+    #expect(item.revealTargets.map(\.lastPathComponent) == ["x.md", "x.docx"])
+}

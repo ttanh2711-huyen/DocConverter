@@ -5,6 +5,7 @@ import DocConverterKit
 ///   DOCCONV_TEST_FILES="/a.pdf:/thư mục"  nạp tệp/thư mục (thư mục con: DOCCONV_TEST_RECURSIVE=0 để tắt)
 ///                                        rồi bấm "Bắt đầu"
 ///   DOCCONV_TEST_FORMAT=md|docx|md,docx  định dạng cho PDF;  DOCCONV_TEST_OUT=/thư/mục  lưu vào thư mục khác
+///   DOCCONV_TEST_CANCEL_AFTER=3          bấm "Huỷ" sau 3 giây
 ///   DOCCONV_TEST_TRASH=1                 bật "Xoá tệp gốc" cho lần chạy này
 ///   DOCCONV_TEST_SNAPSHOT=/tmp/x.png    khi xong, chụp cửa sổ ra PNG rồi thoát
 @MainActor
@@ -21,6 +22,12 @@ enum SelfTest {
         model.optionsOverride = options
         model.trashOriginalsOverride = env["DOCCONV_TEST_TRASH"] == "1"
         model.start()
+        if let after = env["DOCCONV_TEST_CANCEL_AFTER"].flatMap(Double.init) {
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(after))
+                model.cancel()
+            }
+        }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(500))
             while model.store.isRunning { try? await Task.sleep(for: .milliseconds(200)) }
