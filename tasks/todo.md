@@ -125,22 +125,24 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Lệnh nhận nhiều file và/hoặc thư mục (`--recursive`), bỏ qua file ẩn và file không hỗ trợ (vẫn báo lại). Đường dẫn đầu ra: `--out-mode beside` hoặc `--out-mode dir --out <thư mục>`, giữ cấu trúc thư mục con tương đối so với `--base`. Cờ `--json` in mỗi dòng một sự kiện `start|progress|done|error|skipped`; sự kiện `done` liệt kê đủ đường dẫn output. File lỗi không làm dừng cả lô. Khi nhận SIGTERM thì dọn file dở dang. Mô tả giao thức trong `core/PROTOCOL.md`.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Đầu vào `A/` chứa `A/x.pdf` và `A/sub/y.xlsx`, chạy với `--out-mode dir --out O` → `O/x.md`, `O/x.docx`, `O/sub/y.md`
-- [ ] Một lô 5 file có 1 file hỏng: 4 file thành công, 1 sự kiện `error`, mã thoát cho biết có lỗi một phần; stdout chỉ chứa JSON hợp lệ
-- [ ] SIGTERM giữa chừng không để lại file output dở dang
+- [x] Đầu vào `A/` chứa `A/x.pdf` và `A/sub/y.xlsx`, chạy với `--out-mode dir --out O` → `O/x.md`, `O/x.docx`, `O/sub/y.md`
+- [x] Một lô 5 file có 1 file hỏng: 4 file thành công, 1 sự kiện `error`, mã thoát cho biết có lỗi một phần; stdout chỉ chứa JSON hợp lệ
+- [x] SIGTERM giữa chừng không để lại file output dở dang
 
 **Kiểm chứng:**
-- [ ] `uv run pytest tests/test_paths.py tests/test_batch.py tests/test_events.py`
-- [ ] Thủ công: `uv run docconv convert fixtures/ --recursive --to md,docx --out-mode dir --out /tmp/o --json | jq .`
+- [x] `uv run pytest tests/test_paths.py tests/test_batch.py tests/test_events.py`
+- [x] Thủ công: `uv run docconv convert fixtures/ --recursive --to md,docx --out-mode dir --out /tmp/o --json | jq .`
+
+**Kết quả:** ✅ 49 test xanh (59 s). Bổ sung `--manifest` (danh sách `{src, base}`) để app gửi đúng các tệp đã chọn kèm thư mục gốc; mã thoát 0/1/2/130.
 
 **Phụ thuộc:** Task 4, Task 5
 **File dự kiến:** `core/src/docconv/cli.py`, `core/src/docconv/paths.py`, `core/src/docconv/events.py`, `core/PROTOCOL.md`, `core/tests/`
 **Quy mô:** M
 
 ## Checkpoint 1: Lõi hoàn chỉnh
-- [ ] `cd core && uv run pytest` xanh hết
-- [ ] CLI chuyển được thư mục hỗn hợp ở cả hai chế độ đầu ra
-- [ ] Người dùng thử CLI với 3–5 tài liệu thật
+- [x] `cd core && uv run pytest` xanh hết
+- [x] CLI chuyển được thư mục hỗn hợp ở cả hai chế độ đầu ra
+- [ ] Người dùng thử CLI với 3–5 tài liệu thật (chưa có tài liệu thật)
 
 ---
 

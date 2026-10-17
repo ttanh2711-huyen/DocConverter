@@ -1,5 +1,3 @@
-import sys
+from docconv.cli import entry
 
-from docconv.cli import main
-
-sys.exit(main())
+entry()

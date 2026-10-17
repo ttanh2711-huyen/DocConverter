@@ -18,7 +18,7 @@ dependencies = [
 ]
 
 [project.scripts]
-docconv = "docconv.cli:main"
+docconv = "docconv.cli:entry"
 
 [dependency-groups]
 dev = ["pytest", "reportlab", "openpyxl", "python-pptx"]

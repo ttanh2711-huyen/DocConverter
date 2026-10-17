@@ -91,10 +91,10 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 - [x] Task 3: CLI `docconv` + PDF → MD đầu-cuối
 - [x] Task 4: PDF → DOCX theo phương án đã chọn
 - [x] Task 5: Định dạng khác → MD bằng markitdown + router
-- [ ] Task 6: Chạy theo lô, thư mục đệ quy, đường dẫn đầu ra, giao thức JSON Lines
+- [x] Task 6: Chạy theo lô, thư mục đệ quy, đường dẫn đầu ra, giao thức JSON Lines
 
 ### Checkpoint 1
-- [ ] `uv run pytest` xanh; CLI chuyển được thư mục hỗn hợp với cả hai chế độ đầu ra
+- [x] `uv run pytest` xanh; CLI chuyển được thư mục hỗn hợp với cả hai chế độ đầu ra
 
 ### Phase 2: Ứng dụng macOS
 - [ ] Task 7: Vỏ SwiftUI: thả 1 PDF → nhận .md
