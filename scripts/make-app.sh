@@ -16,6 +16,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/DocConverter"
 cp "$ROOT/app/Resources/Info.plist" "$APP/Contents/Info.plist"
 
+# Môi trường Python được tạo ở lần chạy đầu (bootstrap-env.sh) từ các tệp này.
+RES="$APP/Contents/Resources"
+cp "$ROOT/scripts/bootstrap-env.sh" "$RES/"
+cp "${UV_BIN:-$(command -v uv || echo "$HOME/.local/bin/uv")}" "$RES/uv"
+mkdir -p "$RES/core"
+cp "$ROOT/core/pyproject.toml" "$ROOT/core/uv.lock" "$RES/core/"
+rsync -a --exclude __pycache__ "$ROOT/core/src" "$RES/core/"
+cp "$ROOT/core/tests/fixtures/text_vi.pdf" "$RES/sample.pdf"
+
 if [[ $DEV == 1 ]]; then
   /usr/libexec/PlistBuddy -c "Add :DocConverterDevPython string $ROOT/core/.venv/bin/python" "$APP/Contents/Info.plist"
 fi

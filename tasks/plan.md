@@ -107,8 +107,8 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 - [ ] Toàn bộ luồng chạy được từ app; người dùng dùng thử với tài liệu thật
 
 ### Phase 3: Đóng gói và hoàn thiện
-- [ ] Task 12: Thiết lập môi trường lần đầu
-- [ ] Task 13: Cài đặt OCR
+- [x] Task 12: Thiết lập môi trường lần đầu
+- [x] Task 13: Cài đặt OCR
 - [ ] Task 14: Đóng gói `.app`, ký ad-hoc, README
 
 ### Checkpoint 3

@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TextIO
 
 from docconv.events import Emitter
+from docconv.ocr import OcrSettings
 from docconv.paths import dest_dir, unique
 from docconv.router import SUPPORTED_EXTS, UnsupportedFormat, kind_of
 
@@ -59,8 +60,8 @@ def collect(inputs: list[Path], manifest: list[dict], recursive: bool, exclude: 
 class Converter:
     """Chuyển một tệp; mọi đầu ra được tạo trong thư mục tạm rồi mới chuyển vào chỗ."""
 
-    def __init__(self, formats: list[str], overwrite: bool, emit: Emitter):
-        self.formats, self.overwrite, self.emit = formats, overwrite, emit
+    def __init__(self, formats: list[str], overwrite: bool, emit: Emitter, ocr=None):
+        self.formats, self.overwrite, self.emit, self.ocr = formats, overwrite, emit, ocr
 
     def _final(self, dest: Path, stem: str, ext: str) -> Path:
         path = dest / f"{stem}{ext}"
@@ -95,7 +96,7 @@ class Converter:
             self.emit("progress", file=str(src), stage="analyze",
                       message=f"Đang phân tích bố cục ({page_count(src)} trang)"
                       + ("" if is_text else ", nhận dạng chữ (OCR)"))
-            result = pdf_docling.analyze(src, force_ocr=not is_text)
+            result = pdf_docling.analyze(src, force_ocr=not is_text, settings=self.ocr or OcrSettings())
         produced: list[Path] = []
         if "md" in self.formats:
             self.emit("progress", file=str(src), stage="markdown", message="Đang ghi Markdown")
@@ -142,6 +143,11 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--out", type=Path, help="Thư mục đầu ra khi --out-mode dir")
     c.add_argument("--overwrite", action="store_true", help="Ghi đè tệp đầu ra đã có")
     c.add_argument("--json", action="store_true", help="In sự kiện JSON Lines ra stdout (cho app)")
+    c.add_argument("--ocr", choices=["auto", "off", "force"], default="auto",
+                   help="auto: chỉ OCR trang không có chữ; off: tắt; force: OCR mọi trang")
+    c.add_argument("--ocr-engine", choices=["ocrmac", "easyocr"], default="ocrmac")
+    c.add_argument("--ocr-lang", default="vi,en", help="Ngôn ngữ OCR, ví dụ vi,en")
+    c.add_argument("--no-tables", action="store_true", help="Tắt nhận dạng cấu trúc bảng (nhanh hơn)")
     return ap
 
 
@@ -172,7 +178,9 @@ def main(argv: list[str] | None = None, out: TextIO | None = None, err: TextIO |
         raise Cancelled()
 
     previous = {s: signal.signal(s, on_signal) for s in (signal.SIGTERM, signal.SIGINT)}
-    converter = Converter(formats, args.overwrite, emit)
+    ocr = OcrSettings(mode=args.ocr, engine=args.ocr_engine,
+                      langs=tuple(x.strip() for x in args.ocr_lang.split(",") if x.strip()), tables=not args.no_tables)
+    converter = Converter(formats, args.overwrite, emit, ocr)
     jobs = [i for i in items if isinstance(i, Job)]
     ok = failed = skipped = 0
     cancelled = False

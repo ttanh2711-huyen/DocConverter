@@ -6,6 +6,7 @@ import Observation
 @MainActor @Observable
 final class AppModel {
     let store = JobStore()
+    let environment = EnvironmentManager.forApp()
     /// Chỉ dùng cho chế độ tự kiểm tra; bình thường đọc tuỳ chọn người dùng đã lưu.
     var optionsOverride: ConversionOptions?
     var trashOriginalsOverride: Bool?
@@ -15,8 +16,8 @@ final class AppModel {
     func start() {
         let jobs = store.pendingJobs
         guard !jobs.isEmpty, !store.isRunning else { return }
-        guard let python = PythonLocator.resolve() else {
-            alert = "Không tìm thấy môi trường Python của DocConverter. Hãy mở lại app để thiết lập."
+        guard case .ready(let python) = environment.state else {
+            alert = "Môi trường chuyển đổi chưa sẵn sàng."
             return
         }
         let options = optionsOverride ?? ConversionOptions.load()

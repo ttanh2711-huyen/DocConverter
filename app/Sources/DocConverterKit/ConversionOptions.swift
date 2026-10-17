@@ -19,8 +19,45 @@ public struct ConversionOptions: Equatable, Sendable {
         case folder(URL)
     }
 
+    /// Tuỳ chọn nhận dạng chữ (OCR) và bảng cho PDF.
+    public struct OCR: Equatable, Sendable {
+        public enum Mode: String, CaseIterable, Sendable {
+            case auto, off, force
+
+            public var title: String {
+                switch self {
+                case .auto: "Tự động (chỉ trang không có chữ)"
+                case .off: "Tắt"
+                case .force: "Luôn nhận dạng mọi trang"
+                }
+            }
+        }
+
+        public enum Engine: String, CaseIterable, Sendable {
+            case ocrmac, easyocr
+
+            public var title: String {
+                switch self {
+                case .ocrmac: "Apple Vision (khuyên dùng)"
+                case .easyocr: "EasyOCR"
+                }
+            }
+        }
+
+        public var mode: Mode = .auto
+        public var engine: Engine = .ocrmac
+        public var tables = true
+
+        public init(mode: Mode = .auto, engine: Engine = .ocrmac, tables: Bool = true) {
+            self.mode = mode
+            self.engine = engine
+            self.tables = tables
+        }
+    }
+
     public var pdfFormat: PDFFormat
     public var location: Location
+    public var ocr = OCR()
 
     public init(pdfFormat: PDFFormat = .markdown, location: Location = .besideSource) {
         self.pdfFormat = pdfFormat
@@ -33,6 +70,9 @@ public struct ConversionOptions: Equatable, Sendable {
         case .besideSource: args += ["--out-mode", "beside"]
         case .folder(let url): args += ["--out-mode", "dir", "--out", url.path]
         }
+        if ocr.mode != .auto { args += ["--ocr", ocr.mode.rawValue] }
+        if ocr.engine != .ocrmac { args += ["--ocr-engine", ocr.engine.rawValue] }
+        if !ocr.tables { args.append("--no-tables") }
         return args
     }
 
@@ -49,14 +89,22 @@ public struct ConversionOptions: Equatable, Sendable {
         public static let useOutputFolder = "useOutputFolder"
         public static let trashOriginals = "trashOriginals"
         public static let trashOriginalsConfirmed = "trashOriginalsConfirmed"
+        public static let ocrMode = "ocrMode"
+        public static let ocrEngine = "ocrEngine"
+        public static let ocrTables = "ocrTables"
     }
 
     public static func load(from defaults: UserDefaults = .standard) -> ConversionOptions {
         let format = defaults.string(forKey: Keys.pdfFormat).flatMap(PDFFormat.init(rawValue:)) ?? .markdown
+        var options = ConversionOptions(pdfFormat: format)
         if defaults.bool(forKey: Keys.useOutputFolder), let path = defaults.string(forKey: Keys.outputFolder) {
-            return ConversionOptions(pdfFormat: format, location: .folder(URL(fileURLWithPath: path)))
+            options.location = .folder(URL(fileURLWithPath: path))
         }
-        return ConversionOptions(pdfFormat: format)
+        options.ocr = OCR(
+            mode: defaults.string(forKey: Keys.ocrMode).flatMap(OCR.Mode.init(rawValue:)) ?? .auto,
+            engine: defaults.string(forKey: Keys.ocrEngine).flatMap(OCR.Engine.init(rawValue:)) ?? .ocrmac,
+            tables: defaults.object(forKey: Keys.ocrTables) as? Bool ?? true)
+        return options
     }
 
     public func save(to defaults: UserDefaults = .standard) {
@@ -68,5 +116,8 @@ public struct ConversionOptions: Equatable, Sendable {
             defaults.set(true, forKey: Keys.useOutputFolder)
             defaults.set(url.path, forKey: Keys.outputFolder)
         }
+        defaults.set(ocr.mode.rawValue, forKey: Keys.ocrMode)
+        defaults.set(ocr.engine.rawValue, forKey: Keys.ocrEngine)
+        defaults.set(ocr.tables, forKey: Keys.ocrTables)
     }
 }

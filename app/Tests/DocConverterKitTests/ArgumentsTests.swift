@@ -36,3 +36,18 @@ func formatArgument(format: ConversionOptions.PDFFormat, expected: String) {
     options.save(to: defaults)
     #expect(ConversionOptions.load(from: defaults) == options)
 }
+
+@Test func ocrFlagsOnlyWhenNotDefault() {
+    var options = ConversionOptions()
+    options.ocr = .init(mode: .force, engine: .easyocr, tables: false)
+    #expect(options.arguments == ["--to", "md", "--out-mode", "beside",
+                                  "--ocr", "force", "--ocr-engine", "easyocr", "--no-tables"])
+}
+
+@Test func ocrSettingsRoundTrip() {
+    let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+    var options = ConversionOptions()
+    options.ocr = .init(mode: .off, engine: .ocrmac, tables: true)
+    options.save(to: defaults)
+    #expect(ConversionOptions.load(from: defaults).ocr == options.ocr)
+}

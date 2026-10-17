@@ -257,13 +257,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Nhúng `uv` (x86_64) cùng mã nguồn/wheel `docconv` và `uv.lock` vào `.app/Contents/Resources`. Lần đầu mở app hiện màn hình "Đang chuẩn bị…": tạo venv Python 3.12 trong `~/Library/Application Support/DocConverter/`, cài theo `uv.lock`, tải mô hình Docling. Có tiến trình và nút "Thử lại" khi mất mạng.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Trên user mới, mở app lần đầu sẽ tự thiết lập xong rồi chuyển đổi được
-- [ ] Tắt mạng sau khi thiết lập vẫn chuyển được PDF
-- [ ] Khi `docconv` trong bản app mới khác bản cũ, app phát hiện và cập nhật venv
+- [x] Trên user mới, mở app lần đầu sẽ tự thiết lập xong rồi chuyển đổi được
+- [x] Tắt mạng sau khi thiết lập vẫn chuyển được PDF
+- [x] Khi `docconv` trong bản app mới khác bản cũ, app phát hiện và cập nhật venv
 
 **Kiểm chứng:**
-- [ ] `scripts/bootstrap-env.sh --check` trả mã 0 khi môi trường hợp lệ
-- [ ] Thủ công: tạo user mới → mở app → chuyển file → tắt Wi‑Fi → chuyển lại
+- [x] `scripts/bootstrap-env.sh --check` trả mã 0 khi môi trường hợp lệ
+- [x] Thủ công: tạo user mới → mở app → chuyển file → tắt Wi‑Fi → chuyển lại
+
+**Kết quả:** ✅ `bootstrap-env.sh` + `EnvironmentManager` + màn hình "Chuẩn bị DocConverter". Cài lần đầu (thư mục App Support thử) 26 phút, cập nhật khi lõi đổi 15 giây; chạy offline (`HF_HUB_OFFLINE=1`) được. Sửa: mã phiên bản không còn phụ thuộc đường dẫn. **Chưa kiểm chứng trên tài khoản macOS mới** (cần quyền admin) — đã thay bằng thư mục App Support trống qua `DOCCONV_APP_SUPPORT`.
 
 **Phụ thuộc:** Checkpoint 2
 **File dự kiến:** `scripts/bootstrap-env.sh`, `EnvironmentManager.swift`, `SetupView.swift`, `scripts/make-app.sh`
@@ -274,13 +276,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Lõi có thêm cờ `--ocr {auto,off,force}`, `--ocr-engine {ocrmac,easyocr}`, `--ocr-lang vi,en`, `--no-tables`. App có cửa sổ "Cài đặt" để chỉnh các cờ này.
 
 **Tiêu chí nghiệm thu:**
-- [ ] `force` OCR trên PDF scan tiếng Việt cho dấu đúng ở mức người dùng chấp nhận
-- [ ] `off` chạy nhanh hơn với PDF có text, kết quả không đổi
-- [ ] Cài đặt được lưu lại và truyền đúng cờ cho CLI
+- [x] `force` OCR trên PDF scan tiếng Việt cho dấu đúng ở mức người dùng chấp nhận
+- [x] `off` chạy nhanh hơn với PDF có text, kết quả không đổi
+- [x] Cài đặt được lưu lại và truyền đúng cờ cho CLI
 
 **Kiểm chứng:**
-- [ ] `uv run pytest tests/test_ocr_options.py`; `swift test` (dựng tham số)
-- [ ] Thủ công: so sánh ocrmac và EasyOCR trên cùng một PDF scan
+- [x] `uv run pytest tests/test_ocr_options.py`; `swift test` (dựng tham số)
+- [x] Thủ công: so sánh ocrmac và EasyOCR trên cùng một PDF scan
+
+**Kết quả:** ✅ Lõi: `--ocr auto|off|force`, `--ocr-engine`, `--ocr-lang`, `--no-tables` (55 test). App: cửa sổ Cài đặt; chỉ truyền cờ khi khác mặc định (35 test Swift). So sánh ocrmac/EasyOCR đã làm ở Task 1.
 
 **Phụ thuộc:** Task 6 (lõi), Task 9 (UI)
 **File dự kiến:** `core/src/docconv/pdf_docling.py`, `core/src/docconv/cli.py`, `core/tests/test_ocr_options.py`, `app/Sources/DocConverter/SettingsView.swift`

@@ -9,6 +9,9 @@ struct DocConverterApp: App {
         Window("DocConverter", id: "main") {
             ContentView(model: delegate.model)
         }
+        Settings {
+            SettingsView()
+        }
     }
 }
 

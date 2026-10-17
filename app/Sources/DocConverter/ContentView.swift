@@ -9,6 +9,25 @@ struct ContentView: View {
     @State private var dropTargeted = false
 
     var body: some View {
+        Group {
+            if case .ready = model.environment.state {
+                main
+            } else {
+                SetupView(environment: model.environment)
+            }
+        }
+        .frame(minWidth: 720, minHeight: 480)
+        .task { await model.environment.refresh() }
+        .onChange(of: model.environment.state) { _, state in
+            switch state {
+            case .ready: SelfTest.run(model)
+            case .needsSetup: SelfTest.snapshotSetupScreen()
+            default: break
+            }
+        }
+    }
+
+    private var main: some View {
         VStack(spacing: 0) {
             InputPanel(store: model.store)
                 .padding(12)
@@ -43,8 +62,6 @@ struct ContentView: View {
             }
             .padding(12)
         }
-        .frame(minWidth: 720, minHeight: 480)
-        .task { SelfTest.run(model) }
         .alert("Không thể chuyển đổi", isPresented: Binding(get: { model.alert != nil }, set: { if !$0 { model.alert = nil } })) {
             Button("Đóng", role: .cancel) {}
         } message: {
