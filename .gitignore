@@ -3,3 +3,5 @@ __pycache__/
 .pytest_cache/
 spikes/out/
 .DS_Store
+dist/
+.build/

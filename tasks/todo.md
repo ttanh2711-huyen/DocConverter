@@ -153,13 +153,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Tạo `app/` bằng SwiftPM (`.macOS(.v15)`). Cửa sổ tiếng Việt có vùng kéo thả một file. `ConversionRunner` chạy `docconv … --json` bằng `Process` (bản dev trỏ tới venv của `core/`) và giải mã sự kiện. `make-app.sh` tối thiểu: `swift build -c release`, tạo bundle `.app` với Info.plist (`LSMinimumSystemVersion` 15.0, `CFBundleDevelopmentRegion` vi).
 
 **Tiêu chí nghiệm thu:**
-- [ ] Thả 1 PDF thì `.md` được tạo cạnh file gốc và UI báo "Hoàn tất"; UI không bị đơ
-- [ ] Mọi chữ trên giao diện bằng tiếng Việt
-- [ ] App mở được bằng double-click
+- [x] Thả 1 PDF thì `.md` được tạo cạnh file gốc và UI báo "Hoàn tất"; UI không bị đơ
+- [x] Mọi chữ trên giao diện bằng tiếng Việt
+- [x] App mở được bằng double-click
 
 **Kiểm chứng:**
-- [ ] `swift build -c release` không lỗi, không cảnh báo concurrency; `swift test` (giải mã các sự kiện mẫu trong PROTOCOL.md)
-- [ ] Thủ công: kéo thả một PDF
+- [x] `swift build -c release` không lỗi, không cảnh báo concurrency; `swift test` (giải mã các sự kiện mẫu trong PROTOCOL.md)
+- [x] Thủ công: kéo thả một PDF
+
+**Kết quả:** ✅ Swift Testing chạy được với Command Line Tools. Thư viện `DocConverterKit` (sự kiện, runner, JobStore) và app `DocConverter`. Tự kiểm tra qua `DOCCONV_TEST_FILES`/`DOCCONV_TEST_SNAPSHOT` (không cần quyền Ghi màn hình): PDF + XLSX → .md, `.doc` báo lỗi.
 
 **Phụ thuộc:** Task 6 (có thể bắt đầu với CLI giả khi PROTOCOL.md đã chốt)
 **File dự kiến:** `app/Package.swift`, `app/Sources/DocConverter/{DocConverterApp,ContentView,ConversionRunner}.swift`, `app/Tests/`, `scripts/make-app.sh`

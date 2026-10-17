@@ -97,7 +97,7 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 - [x] `uv run pytest` xanh; CLI chuyển được thư mục hỗn hợp với cả hai chế độ đầu ra
 
 ### Phase 2: Ứng dụng macOS
-- [ ] Task 7: Vỏ SwiftUI: thả 1 PDF → nhận .md
+- [x] Task 7: Vỏ SwiftUI: thả 1 PDF → nhận .md
 - [ ] Task 8: Đầu vào: chọn file, chọn thư mục, kéo thả, danh sách job
 - [ ] Task 9: Đầu ra: định dạng, lưu cạnh gốc / thư mục tuỳ chọn
 - [ ] Task 10: Tuỳ chọn xoá bản gốc (vào Thùng rác) sau khi thành công
