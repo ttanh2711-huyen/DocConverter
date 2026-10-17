@@ -210,13 +210,15 @@ Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ th
 **Mô tả:** Checkbox "Xoá tệp gốc sau khi chuyển thành công (đưa vào Thùng rác)", mặc định **tắt**. Bật lần đầu thì hiện hộp xác nhận. Sau sự kiện `done`, app kiểm tra mọi output yêu cầu đều tồn tại và có kích thước > 0, rồi mới gọi `FileManager.trashItem`. Nếu `trashItem` thất bại thì giữ nguyên file và báo lỗi. Trạng thái job hiển thị "Đã đưa tệp gốc vào Thùng rác".
 
 **Tiêu chí nghiệm thu:**
-- [ ] Thành công: file gốc nằm trong Thùng rác (khôi phục được), output vẫn nguyên vẹn
-- [ ] File lỗi, bị huỷ, bị bỏ qua, hoặc chỉ ra được một phần output: file gốc **không** bị đụng tới
-- [ ] Output trùng đường dẫn với file gốc: không xoá
+- [x] Thành công: file gốc nằm trong Thùng rác (khôi phục được), output vẫn nguyên vẹn
+- [x] File lỗi, bị huỷ, bị bỏ qua, hoặc chỉ ra được một phần output: file gốc **không** bị đụng tới
+- [x] Output trùng đường dẫn với file gốc: không xoá
 
 **Kiểm chứng:**
-- [ ] `swift test` (`SourceDisposerTests` với thư mục tạm, phủ đủ các ca trên)
-- [ ] Thủ công: chạy một lô có 1 file hỏng và bật tuỳ chọn này, rồi kiểm tra Thùng rác
+- [x] `swift test` (`SourceDisposerTests` với thư mục tạm, phủ đủ các ca trên)
+- [x] Thủ công: chạy một lô có 1 file hỏng và bật tuỳ chọn này, rồi kiểm tra Thùng rác
+
+**Kết quả:** ✅ 27 test Swift (Thùng rác giả phủ các ca: lỗi, huỷ, bỏ qua, thiếu/rỗng output, trùng đường dẫn, trashItem lỗi). Tự kiểm tra với Thùng rác thật: CSV đã chuyển → Thùng rác, PDF hỏng giữ nguyên.
 
 **Phụ thuộc:** Task 9
 **File dự kiến:** `SourceDisposer.swift`, `OutputOptionsView.swift`, `JobStore.swift`, `Tests/DocConverterTests/SourceDisposerTests.swift`

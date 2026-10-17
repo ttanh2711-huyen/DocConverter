@@ -100,7 +100,7 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 - [x] Task 7: Vỏ SwiftUI: thả 1 PDF → nhận .md
 - [x] Task 8: Đầu vào: chọn file, chọn thư mục, kéo thả, danh sách job
 - [x] Task 9: Đầu ra: định dạng, lưu cạnh gốc / thư mục tuỳ chọn
-- [ ] Task 10: Tuỳ chọn xoá bản gốc (vào Thùng rác) sau khi thành công
+- [x] Task 10: Tuỳ chọn xoá bản gốc (vào Thùng rác) sau khi thành công
 - [ ] Task 11: Huỷ, hiển thị lỗi, mở trong Finder
 
 ### Checkpoint 2

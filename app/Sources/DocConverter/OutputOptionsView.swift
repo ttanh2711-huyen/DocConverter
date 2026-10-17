@@ -8,6 +8,9 @@ struct OutputOptionsView: View {
     @AppStorage(Keys.pdfFormat) private var pdfFormat = ConversionOptions.PDFFormat.markdown.rawValue
     @AppStorage(Keys.useOutputFolder) private var useOutputFolder = false
     @AppStorage(Keys.outputFolder) private var outputFolder = ""
+    @AppStorage(Keys.trashOriginals) private var trashOriginals = false
+    @AppStorage(Keys.trashOriginalsConfirmed) private var trashOriginalsConfirmed = false
+    @State private var confirmTrash = false
 
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 10) {
@@ -42,6 +45,24 @@ struct OutputOptionsView: View {
                     }
                 }
             }
+            GridRow {
+                Color.clear.gridCellUnsizedAxes([.horizontal, .vertical])
+                Toggle("Xoá tệp gốc sau khi chuyển thành công (đưa vào Thùng rác)", isOn: Binding(
+                    get: { trashOriginals },
+                    set: { on in
+                        if on && !trashOriginalsConfirmed { confirmTrash = true } else { trashOriginals = on }
+                    }))
+            }
+        }
+        .confirmationDialog("Xoá tệp gốc sau khi chuyển đổi?", isPresented: $confirmTrash) {
+            Button("Bật tuỳ chọn này", role: .destructive) {
+                trashOriginalsConfirmed = true
+                trashOriginals = true
+            }
+            Button("Không", role: .cancel) {}
+        } message: {
+            Text("Sau khi mọi tệp kết quả của một tệp đã được tạo thành công, tệp gốc sẽ được chuyển vào Thùng rác. "
+                 + "Bạn có thể khôi phục từ Thùng rác. Tệp lỗi, bị huỷ hoặc chuyển chưa đủ sẽ được giữ nguyên.")
         }
         .onChange(of: useOutputFolder) { _, on in
             if on && outputFolder.isEmpty { pickFolder() }

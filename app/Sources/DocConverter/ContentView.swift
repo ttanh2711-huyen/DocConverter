@@ -98,7 +98,9 @@ struct JobRow: View {
         switch item.status {
         case .pending: "Đang chờ"
         case .running(let message): message
-        case .done: "Hoàn tất"
+        case .done:
+            ["Hoàn tất", item.sourceTrashed ? "đã đưa tệp gốc vào Thùng rác" : nil, item.note]
+                .compactMap { $0 }.joined(separator: " · ")
         case .failed(let message): message
         case .skipped(let message): message
         case .cancelled: "Đã huỷ"

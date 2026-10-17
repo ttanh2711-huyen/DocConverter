@@ -8,6 +8,7 @@ final class AppModel {
     let store = JobStore()
     /// Chỉ dùng cho chế độ tự kiểm tra; bình thường đọc tuỳ chọn người dùng đã lưu.
     var optionsOverride: ConversionOptions?
+    var trashOriginalsOverride: Bool?
     var alert: String?
     @ObservationIgnored private var runner: ConversionRunner?
 
@@ -22,6 +23,15 @@ final class AppModel {
         if case .folder(let url) = options.location, !FileManager.default.fileExists(atPath: url.path) {
             alert = "Thư mục lưu kết quả không tồn tại: \(url.path)"
             return
+        }
+        let trashOriginals = trashOriginalsOverride
+            ?? UserDefaults.standard.bool(forKey: ConversionOptions.Keys.trashOriginals)
+        store.onJobDone = { [store] item in
+            guard trashOriginals else { return }
+            switch SourceDisposer.disposeIfSafe(item, pdfFormat: options.pdfFormat) {
+            case .trashed: store.update(item.id) { $0.sourceTrashed = true }
+            case .kept(let reason): store.update(item.id) { $0.note = reason }
+            }
         }
         let runner = ConversionRunner(python: python)
         self.runner = runner

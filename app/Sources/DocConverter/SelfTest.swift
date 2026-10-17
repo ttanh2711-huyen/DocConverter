@@ -5,6 +5,7 @@ import DocConverterKit
 ///   DOCCONV_TEST_FILES="/a.pdf:/thư mục"  nạp tệp/thư mục (thư mục con: DOCCONV_TEST_RECURSIVE=0 để tắt)
 ///                                        rồi bấm "Bắt đầu"
 ///   DOCCONV_TEST_FORMAT=md|docx|md,docx  định dạng cho PDF;  DOCCONV_TEST_OUT=/thư/mục  lưu vào thư mục khác
+///   DOCCONV_TEST_TRASH=1                 bật "Xoá tệp gốc" cho lần chạy này
 ///   DOCCONV_TEST_SNAPSHOT=/tmp/x.png    khi xong, chụp cửa sổ ra PNG rồi thoát
 @MainActor
 enum SelfTest {
@@ -18,6 +19,7 @@ enum SelfTest {
         if let f = env["DOCCONV_TEST_FORMAT"].flatMap(ConversionOptions.PDFFormat.init(rawValue:)) { options.pdfFormat = f }
         if let out = env["DOCCONV_TEST_OUT"] { options.location = .folder(URL(fileURLWithPath: out)) }
         model.optionsOverride = options
+        model.trashOriginalsOverride = env["DOCCONV_TEST_TRASH"] == "1"
         model.start()
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(500))

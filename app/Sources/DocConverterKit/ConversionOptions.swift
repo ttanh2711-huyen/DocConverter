@@ -47,6 +47,8 @@ public struct ConversionOptions: Equatable, Sendable {
         public static let pdfFormat = "pdfFormat"
         public static let outputFolder = "outputFolder"
         public static let useOutputFolder = "useOutputFolder"
+        public static let trashOriginals = "trashOriginals"
+        public static let trashOriginalsConfirmed = "trashOriginalsConfirmed"
     }
 
     public static func load(from defaults: UserDefaults = .standard) -> ConversionOptions {
