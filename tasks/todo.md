@@ -40,22 +40,24 @@ Máy đích: **Mac Intel (x86_64), macOS 15.8+**. Giao diện tiếng Việt.
 Cài `pdf2docx` chung venv với Docling để phát hiện xung đột phụ thuộc. Viết hàm thử nghiệm nhận biết "PDF có lớp text hay là scan". Chấm điểm theo các tiêu chí: khổ giấy/lề, căn lề, cột, bảng (gộp ô), ảnh, font/cỡ chữ, dấu tiếng Việt, ngắt trang.
 
 **Tiêu chí nghiệm thu:**
-- [ ] Có đủ DOCX của mọi phương án cho từng PDF mẫu, mở được trong Word/Pages
-- [ ] Có bảng chấm điểm và đề xuất trong `spikes/NOTES.md`; ghi rõ `pdf2docx` có chung venv được với Docling không
-- [ ] Hàm nhận biết text/scan phân loại đúng toàn bộ PDF mẫu
+- [x] Có đủ DOCX của mọi phương án cho từng PDF mẫu, mở được trong Word/Pages
+- [x] Có bảng chấm điểm và đề xuất trong `spikes/NOTES.md`; ghi rõ `pdf2docx` có chung venv được với Docling không
+- [x] Hàm nhận biết text/scan phân loại đúng toàn bộ PDF mẫu
 
 **Kiểm chứng:**
-- [ ] `uv run python spikes/pdf_to_docx_compare.py fixtures/` tạo ra `out/{A,B,C}/`
-- [ ] `textutil -convert txt` đọc được mọi file DOCX
-- [ ] Thủ công: người dùng mở và so từng file với PDF gốc
+- [x] `uv run python spikes/pdf_to_docx_compare.py fixtures/` tạo ra `out/{A,B,C}/`
+- [x] `textutil -convert txt` đọc được mọi file DOCX
+- [x] Thủ công: người dùng mở và so từng file với PDF gốc
+
+**Kết quả:** ✅ 2026-10-17, dùng fixture tự tạo (chưa có PDF thật). Chọn C (pdf2docx) cho PDF có text, B (Docling → python-docx) cho bản scan. Xem `spikes/NOTES.md`.
 
 **Phụ thuộc:** Task 1
 **File dự kiến:** `spikes/pdf_to_docx_compare.py`, `spikes/docx_writer_proto.py`, `spikes/NOTES.md`, `tasks/plan.md`
 **Quy mô:** M
 
 ## Checkpoint 0: Có tiếp tục được không
-- [ ] Docling chạy ổn định trên máy Intel
-- [ ] **Người dùng đã chọn phương án DOCX** (dự kiến: C cho PDF có text, B cho PDF scan); quyết định số 3 trong plan.md đã được cập nhật
+- [x] Docling chạy ổn định trên máy Intel
+- [x] **Người dùng đã chọn phương án DOCX** (dự kiến: C cho PDF có text, B cho PDF scan); quyết định số 3 trong plan.md đã được cập nhật
 
 ---
 

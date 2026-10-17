@@ -10,6 +10,9 @@ dependencies = [
     "numpy<2",
     "docling-parse<=4.7.2",  # bản cuối có wheel macOS x86_64
     "easyocr>=1.7.2",
+    "pdf2docx>=0.5.13",
+    "python-docx>=1.2.0",
+    "pypandoc-binary>=1.17",
 ]
 
 [dependency-groups]

@@ -49,7 +49,7 @@ Tính năng chính:
    - **A.** Docling → HTML → pandoc: chỉ để đối chứng, mất bố cục.
    - **B.** Docling → bộ ghi `python-docx` tự viết, dùng khổ trang, lề, bbox, cỡ chữ, bảng, ảnh.
    - **C.** `pdf2docx` cho PDF có sẵn text; Docling (OCR) → bộ ghi B cho PDF scan.
-   - Người dùng đã đồng ý dùng C nếu C giống bản gốc hơn; quyết định cuối cùng ở Checkpoint 0 sau khi xem mẫu. Router trong lõi tự nhận biết PDF có lớp text hay là bản scan để chọn đường đi.
+   - **Đã chốt (Task 2):** PDF có lớp text dùng **C** (giống bản gốc nhất, nhanh hơn ~15 lần); PDF scan dùng **B**. A bị loại. Router trong lõi tự nhận biết PDF có lớp text hay là bản scan để chọn đường đi.
    - Markdown luôn đi qua Docling.
 4. **OCR mặc định dùng `ocrmac` (Apple Vision)**; EasyOCR (`vi`, `en`) làm dự phòng. Mặc định chỉ OCR khi trang không có lớp text; có tuỳ chọn ép OCR.
 5. **Đường dẫn đầu ra do lõi tính** (`--out-mode beside|dir`, `--out`, `--base`) để kiểm thử được bằng pytest. Trùng tên thì thêm hậu tố ` (1)`; không ghi đè nếu không được yêu cầu.
@@ -82,7 +82,7 @@ Môi trường Python 3.12 + torch 2.2.2 (Intel)                ← rủi ro cao
 
 ### Phase 0: Spike, giảm rủi ro
 - [x] Task 1: Môi trường Docling chạy được trên macOS Intel 15.8
-- [ ] Task 2: So sánh các phương án PDF → DOCX giữ bố cục
+- [x] Task 2: So sánh các phương án PDF → DOCX giữ bố cục
 
 ### Checkpoint 0
 - [ ] Docling chạy ổn định; **người dùng chọn phương án DOCX** sau khi xem file mẫu

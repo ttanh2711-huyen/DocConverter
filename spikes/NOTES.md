@@ -46,3 +46,34 @@ uv run pytest -s
 uv run python pdf_to_md.py fixtures/text_vi.pdf --out out/text
 uv run python pdf_to_md.py fixtures/scan_vi.pdf --out out/scan --ocr force --engine ocrmac
 ```
+
+## Task 2: So sánh phương án PDF → DOCX (2026-10-17)
+
+Chưa có PDF thật từ người dùng nên dùng fixture tự tạo `layout_vi.pdf`: văn bản hành chính 2 trang, header 2 bên (UBND | quốc hiệu), bảng gộp ô 2 tầng, con dấu đỏ, khối chữ ký, trang 2 chia 2 cột. Bản scan tương ứng là `layout_scan_vi.pdf` (200 dpi). Chạy lại bằng `uv run python pdf_to_docx_compare.py fixtures/text_vi.pdf fixtures/layout_vi.pdf fixtures/layout_scan_vi.pdf`, kết quả ở `out/compare/{A,B,C}` và `report.json`. Ảnh Quick Look `*.docx.png` chỉ để tham khảo, vì Quick Look không hiển thị giống Word.
+
+`pdf2docx` 0.5.13 (PyMuPDF 1.28.2) cài **chung venv** với Docling 2.73.1, không phá các bản ghim.
+
+| Tiêu chí | A: Docling→HTML→pandoc | B: Docling→python-docx (tự viết) | C: pdf2docx |
+|---|---|---|---|
+| Khổ giấy A4 | ✗ (mặc định của pandoc) | ✓ | ✓ |
+| Lề | ✗ | ✓ ước lượng từ khung nội dung (31/22/24/24 mm, gốc 30/20/20/20) | ✓ (25/22/12/25) |
+| Text tiếng Việt (bản text) | 29/30 dòng | 29/30 | 29/30 |
+| Text (bản scan, OCR) | 25/30 | 26/30 | không áp dụng (không có lớp text) |
+| Bảng gộp ô | ✓ (nhưng không có khung) | ✓ có khung | ✓ có khung, độ rộng cột gần gốc |
+| Ảnh/con dấu | ✗ mất | ✓ đúng kích thước, gần đúng vị trí | ✓ đúng vị trí |
+| Header 2 bên | ✗ | ✓ (bảng không viền) | ✗ xếp chồng thành các dòng |
+| Trang 2 cột | ✗ | ✓ (bảng 2 ô) | ✓ (section nhiều cột của Word) |
+| Font/cỡ chữ | ✗ | Times New Roman; cỡ ước lượng từ dòng OCR, lệch ±1,5pt | ✓ lấy từ PDF |
+| Thời gian (2 trang) | ~5 s | ~5 s | **0,3 s** |
+
+### Quyết định (theo đồng ý trước của người dùng ở mục 8 trong plan)
+- **PDF có lớp text → C (`pdf2docx`)**: giống bản gốc nhất (font, cỡ, cột, vị trí ảnh) và nhanh hơn ~15 lần.
+- **PDF scan → B**: Docling (OCR ocrmac, `generate_parsed_pages=True`) rồi dùng `docx_writer_proto.write_docx(doc, out, line_boxes_from(result))`.
+- **Markdown → luôn đi qua Docling.**
+- Nhận biết text/scan: `has_text_layer()` (trung bình ≥ 20 ký tự/trang qua pypdfium2); phân loại đúng 4/4 fixture.
+- A bị loại.
+
+### Hạn chế đã biết
+- B: cỡ chữ là ước lượng; không có in nghiêng; bảng trên bản scan phụ thuộc vào nhận dạng bảng của Docling (bản scan làm lệch cột STT).
+- C: header 2 bên bị xếp chồng; có thêm section break. Nếu người dùng thấy cần, có thể xử lý hậu kỳ sau.
+- Cần kiểm chứng lại với PDF thật của người dùng (chưa có).
