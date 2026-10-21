@@ -6,49 +6,85 @@ struct JobListView: View {
     @Bindable var model: AppModel
 
     var body: some View {
-        List(selection: $model.selection) {
-            ForEach(model.store.items) { item in
-                JobRow(item: item).tag(item.id)
+        let items = model.store.items.filter { model.filter.includes($0.status) }
+        ScrollViewReader { proxy in
+            List(selection: $model.selection) {
+                ForEach(items) { item in
+                    JobRow(item: item, canRemove: !model.store.isRunning) {
+                        model.store.remove(item.id)
+                        model.selection.remove(item.id)
+                    }
+                    .tag(item.id)
+                    .id(item.id)
+                }
+            }
+            .listStyle(.inset)
+            .overlay {
+                if items.isEmpty {
+                    ContentUnavailableView("Không có tệp \(model.filter.title.lowercased())",
+                                           systemImage: "line.3.horizontal.decrease.circle",
+                                           description: Text("Chọn \"Tất cả\" để xem toàn bộ danh sách."))
+                }
+            }
+            // Đang chạy: tự cuộn tới tệp đang xử lý để không phải tìm.
+            .onChange(of: runningID) { _, id in
+                guard let id else { return }
+                withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(id, anchor: .center) }
             }
         }
-        .listStyle(.inset)
         .onDeleteCommand { model.removeSelected() }
         .contextMenu(forSelectionType: JobItem.ID.self) { ids in
             let items = model.store.items.filter { ids.contains($0.id) }
             let targets = items.flatMap(\.revealTargets)
-            Button("Hiện kết quả trong Finder") { NSWorkspace.shared.activateFileViewerSelecting(targets) }
+            Button("Mở kết quả", systemImage: "arrow.up.forward.app") { targets.forEach { NSWorkspace.shared.open($0) } }
                 .disabled(targets.isEmpty)
-            Button("Hiện tệp gốc trong Finder") {
+            Button("Hiện kết quả trong Finder", systemImage: "folder") {
+                NSWorkspace.shared.activateFileViewerSelecting(targets)
+            }
+            .disabled(targets.isEmpty)
+            Button("Hiện tệp gốc trong Finder", systemImage: "doc.viewfinder") {
                 NSWorkspace.shared.activateFileViewerSelecting(items.filter { !$0.sourceTrashed }.map(\.url))
             }
             Divider()
-            Button("Xoá khỏi danh sách") { model.store.remove(ids); model.selection.subtract(ids) }
-                .disabled(model.store.isRunning)
+            Button("Xoá khỏi danh sách", systemImage: "minus.circle") {
+                model.store.remove(ids); model.selection.subtract(ids)
+            }
+            .disabled(model.store.isRunning)
         } primaryAction: { ids in
-            let targets = model.store.items.filter { ids.contains($0.id) }.flatMap(\.revealTargets)
-            if !targets.isEmpty { NSWorkspace.shared.activateFileViewerSelecting(targets) }
+            // Bấm đúp: mở ngay tệp kết quả; chưa có kết quả thì mở tệp gốc.
+            let items = model.store.items.filter { ids.contains($0.id) }
+            for item in items {
+                NSWorkspace.shared.open(item.revealTargets.first ?? item.url)
+            }
         }
+    }
+
+    private var runningID: JobItem.ID? {
+        model.store.items.first { $0.isRunning }?.id
     }
 }
 
 struct JobRow: View {
     let item: JobItem
+    let canRemove: Bool
+    let onRemove: () -> Void
+    @AppStorage(ConversionOptions.Keys.pdfFormat) private var pdfFormat = ConversionOptions.PDFFormat.markdown.rawValue
     @State private var showDetail = false
     @State private var hovering = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Image(nsImage: NSWorkspace.shared.icon(forFile: item.url.path))
                 .resizable()
-                .frame(width: 30, height: 30)
-                .opacity(item.status == .pending || item.status == .done || item.isRunning ? 1 : 0.55)
+                .frame(width: 26, height: 26)
+                .opacity(item.status == .pending || item.status == .done || item.isRunning ? 1 : 0.5)
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(item.url.lastPathComponent)
                     .fontWeight(.medium)
                     .lineLimit(1).truncationMode(.middle)
                 Text(subtitle)
-                    .font(.callout)
+                    .font(.caption)
                     .foregroundStyle(subtitleStyle)
                     .lineLimit(1).truncationMode(.middle)
                     .help(item.status == .pending ? (item.url.path as NSString).abbreviatingWithTildeInPath : subtitle)
@@ -56,32 +92,45 @@ struct JobRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             actions
+            if item.status == .pending, !targetFormats.isEmpty {
+                FormatChips(formats: targetFormats)
+            }
             StatusBadge(status: item.status)
-                .frame(width: 92, alignment: .trailing)
+                .frame(width: 96, alignment: .trailing)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, 2)
         .contentShape(.rect)
         .onHover { hovering = $0 }
     }
 
     @ViewBuilder private var actions: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 2) {
             if item.detail != nil {
-                Button("Chi tiết lỗi", systemImage: "info.circle") { showDetail = true }
-                    .help("Xem chi tiết lỗi")
+                RowButton("Xem chi tiết lỗi", systemImage: "exclamationmark.bubble", tint: .red) { showDetail = true }
                     .popover(isPresented: $showDetail, arrowEdge: .bottom) { ErrorDetail(item: item) }
             }
-            if !item.revealTargets.isEmpty {
-                Button("Hiện trong Finder", systemImage: "magnifyingglass") {
-                    NSWorkspace.shared.activateFileViewerSelecting(item.revealTargets)
+            if hovering {
+                if let first = item.revealTargets.first {
+                    RowButton("Mở kết quả", systemImage: "arrow.up.forward.app") { NSWorkspace.shared.open(first) }
+                    RowButton("Hiện trong Finder", systemImage: "folder") {
+                        NSWorkspace.shared.activateFileViewerSelecting(item.revealTargets)
+                    }
                 }
-                .help("Hiện tệp kết quả trong Finder")
-                .opacity(hovering ? 1 : 0.45)
+                if canRemove {
+                    RowButton("Xoá khỏi danh sách", systemImage: "xmark.circle", action: onRemove)
+                }
             }
         }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .imageScale(.large)
+    }
+
+    /// Đuôi tệp sẽ tạo ra, theo tuỳ chọn hiện tại (chỉ hiện khi tệp đang chờ).
+    private var targetFormats: [String] {
+        guard item.url.pathExtension.lowercased() == "pdf" else { return ["MD"] }
+        switch ConversionOptions.PDFFormat(rawValue: pdfFormat) ?? .markdown {
+        case .markdown: return ["MD"]
+        case .word: return ["DOCX"]
+        case .both: return ["MD", "DOCX"]
+        }
     }
 
     /// Dòng phụ: thư mục chứa khi chờ; bước đang làm; kết quả; hoặc lý do lỗi/bỏ qua.
@@ -115,7 +164,51 @@ struct JobRow: View {
     }
 }
 
-private extension JobItem {
+/// Nút biểu tượng nhỏ trong một dòng.
+private struct RowButton: View {
+    let title: String
+    let systemImage: String
+    var tint: Color = .secondary
+    let action: () -> Void
+
+    init(_ title: String, systemImage: String, tint: Color = .secondary, action: @escaping () -> Void) {
+        self.title = title
+        self.systemImage = systemImage
+        self.tint = tint
+        self.action = action
+    }
+
+    var body: some View {
+        Button(title, systemImage: systemImage, action: action)
+            .labelStyle(.iconOnly)
+            .buttonStyle(.borderless)
+            .foregroundStyle(tint)
+            .frame(width: 24, height: 22)
+            .contentShape(.rect)
+            .help(title)
+    }
+}
+
+/// Nhãn định dạng đầu ra, ví dụ "→ MD DOCX".
+struct FormatChips: View {
+    let formats: [String]
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "arrow.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+            ForEach(formats, id: \.self) { f in
+                Text(f)
+                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color.accentColor)
+                    .padding(.horizontal, 5).padding(.vertical, 1.5)
+                    .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 4))
+            }
+        }
+        .help("Định dạng sẽ tạo ra")
+    }
+}
+
+extension JobItem {
     var isRunning: Bool { if case .running = status { true } else { false } }
 }
 
@@ -123,17 +216,19 @@ struct StatusBadge: View {
     let status: JobItem.Status
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 4) {
             if case .running = status {
                 ProgressView().controlSize(.mini)
+            } else {
+                Image(systemName: symbol).imageScale(.small)
             }
             Text(title)
         }
         .font(.caption.weight(.semibold))
         .foregroundStyle(color)
-        .padding(.horizontal, 9)
+        .padding(.horizontal, 8)
         .padding(.vertical, 3)
-        .background(color.opacity(0.14), in: .capsule)
+        .background(color.opacity(0.13), in: .capsule)
     }
 
     private var title: String {
@@ -144,6 +239,17 @@ struct StatusBadge: View {
         case .failed: "Lỗi"
         case .skipped: "Bỏ qua"
         case .cancelled: "Đã huỷ"
+        }
+    }
+
+    private var symbol: String {
+        switch status {
+        case .pending: "clock"
+        case .running: "arrow.triangle.2.circlepath"
+        case .done: "checkmark"
+        case .failed: "exclamationmark.triangle.fill"
+        case .skipped: "forward.fill"
+        case .cancelled: "stop.fill"
         }
     }
 

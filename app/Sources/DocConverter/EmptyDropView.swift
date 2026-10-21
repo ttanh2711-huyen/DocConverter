@@ -6,27 +6,35 @@ struct EmptyDropView: View {
     let targeted: Bool
 
     var body: some View {
-        VStack(spacing: 18) {
-            Image(systemName: targeted ? "arrow.down.doc.fill" : "arrow.down.doc")
-                .font(.system(size: 46, weight: .light))
-                .foregroundStyle(targeted ? Color.accentColor : .secondary)
-                .contentTransition(.symbolEffect(.replace))
+        VStack(spacing: 20) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentColor.opacity(targeted ? 0.2 : 0.1))
+                    .frame(width: 88, height: 88)
+                Image(systemName: targeted ? "arrow.down.doc.fill" : "arrow.down.doc")
+                    .font(.system(size: 38, weight: .regular))
+                    .foregroundStyle(Color.accentColor)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .scaleEffect(targeted ? 1.08 : 1)
 
             VStack(spacing: 6) {
-                Text("Kéo thả tệp hoặc thư mục vào đây")
-                    .font(.title3.weight(.semibold))
-                Text("hoặc chọn từ máy")
+                Text(targeted ? "Thả để thêm vào danh sách" : "Kéo thả tệp hoặc thư mục vào đây")
+                    .font(.title2.weight(.semibold))
+                Text("Chọn định dạng và nơi lưu ở bảng bên phải, rồi bấm Chuyển đổi.")
                     .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 10) {
                 Button { model.chooseFiles() } label: {
-                    Label("Chọn tệp…", systemImage: "doc").frame(minWidth: 110)
+                    Label("Chọn tệp…", systemImage: "doc").frame(minWidth: 120)
                 }
                 .buttonStyle(.borderedProminent)
+                .help("⌘O")
                 Button { model.chooseFolders() } label: {
-                    Label("Chọn thư mục…", systemImage: "folder").frame(minWidth: 110)
+                    Label("Chọn thư mục…", systemImage: "folder").frame(minWidth: 120)
                 }
+                .help("⇧⌘O")
             }
             .controlSize(.large)
 
@@ -34,18 +42,19 @@ struct EmptyDropView: View {
                 FormatLine(inputs: ["PDF"], outputs: ["MD", "DOCX"])
                 FormatLine(inputs: ["DOCX", "XLSX", "PPTX", "HTML", "CSV", "EPUB", "…"], outputs: ["MD"])
             }
-            .padding(.top, 6)
+            .padding(.top, 4)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
-            RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(targeted ? Color.accentColor : Color.secondary.opacity(0.35),
+            RoundedRectangle(cornerRadius: 18)
+                .strokeBorder(targeted ? Color.accentColor : Color.secondary.opacity(0.3),
                               style: StrokeStyle(lineWidth: targeted ? 2 : 1.2, dash: [7, 5]))
-                .background(targeted ? Color.accentColor.opacity(0.06) : .clear, in: .rect(cornerRadius: 16))
-                .padding(20)
+                .background(targeted ? Color.accentColor.opacity(0.06) : Color.secondary.opacity(0.03),
+                            in: .rect(cornerRadius: 18))
+                .padding(16)
         }
-        .animation(.easeOut(duration: 0.15), value: targeted)
+        .animation(.spring(duration: 0.25), value: targeted)
     }
 }
 

@@ -74,6 +74,9 @@ struct AppCommands: Commands {
             Button("Huỷ") { model.cancel() }
                 .keyboardShortcut(".")
                 .disabled(!model.store.isRunning)
+            Button("Hiện kết quả trong Finder") { model.revealAllOutputs() }
+                .keyboardShortcut("r", modifiers: [.command, .shift])
+                .disabled(model.store.isRunning || model.allOutputs.isEmpty)
             Divider()
             Button("Xoá mục đã chọn") { model.removeSelected() }
                 .keyboardShortcut(.delete, modifiers: [])
@@ -85,6 +88,12 @@ struct AppCommands: Commands {
         CommandGroup(before: .sidebar) {
             Button(model.showInspector ? "Ẩn tuỳ chọn" : "Hiện tuỳ chọn") { model.showInspector.toggle() }
                 .keyboardShortcut("i", modifiers: [.command, .option])
+            Divider()
+            ForEach(Array(ListFilter.allCases.enumerated()), id: \.element) { index, filter in
+                Button("Hiện: \(filter.title)") { model.filter = filter }
+                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
+                    .disabled(model.store.items.isEmpty)
+            }
             Divider()
         }
     }
