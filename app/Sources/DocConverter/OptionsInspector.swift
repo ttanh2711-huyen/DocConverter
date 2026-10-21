@@ -1,11 +1,12 @@
-import AppKit
 import DocConverterKit
 import SwiftUI
 
-/// Bảng tuỳ chọn bên phải, xếp theo thứ tự thao tác: đầu vào → định dạng → nơi lưu → sau khi chuyển → OCR.
+/// Bảng tuỳ chọn bên phải, xếp theo thứ tự thao tác: kết quả → nơi lưu → tệp gốc → OCR.
+/// Gọn để vừa một màn hình, không phải cuộn; giải thích dài nằm trong chú thích khi rê chuột.
 struct OptionsInspector: View {
     typealias Keys = ConversionOptions.Keys
     typealias OCR = ConversionOptions.OCR
+    let model: AppModel
     @AppStorage("includeSubfolders") private var includeSubfolders = true
     @AppStorage(Keys.pdfFormat) private var pdfFormat = ConversionOptions.PDFFormat.markdown.rawValue
     @AppStorage(Keys.useOutputFolder) private var useOutputFolder = false
@@ -20,80 +21,84 @@ struct OptionsInspector: View {
     var body: some View {
         Form {
             Section {
-                Picker("Định dạng", selection: $pdfFormat) {
+                Picker("PDF thành", selection: $pdfFormat) {
                     Text("Markdown").tag(ConversionOptions.PDFFormat.markdown.rawValue)
                     Text("Word").tag(ConversionOptions.PDFFormat.word.rawValue)
                     Text("Cả hai").tag(ConversionOptions.PDFFormat.both.rawValue)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+                .help("Word, Excel, PowerPoint, HTML, CSV… luôn được chuyển sang Markdown.")
             } header: {
-                SectionHeader("Đầu ra cho PDF", systemImage: "doc.richtext")
+                SectionHeader("Chuyển PDF thành", systemImage: "doc.richtext")
             } footer: {
-                Footnote("Word, Excel, PowerPoint, HTML… luôn được chuyển sang Markdown.")
+                Footnote("Tệp Office, HTML, CSV… luôn ra Markdown.")
             }
 
             Section {
-                Picker("Nơi lưu", selection: $useOutputFolder) {
+                Picker("Lưu", selection: Binding(
+                    get: { useOutputFolder },
+                    set: { on in
+                        if on && outputFolder.isEmpty { model.chooseOutputFolder() } else { useOutputFolder = on }
+                    })) {
                     Text("Cạnh tệp gốc").tag(false)
                     Text("Thư mục khác").tag(true)
                 }
-                .pickerStyle(.radioGroup)
+                .pickerStyle(.segmented)
                 .labelsHidden()
                 if useOutputFolder {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "folder.fill").foregroundStyle(.tint)
                         Text(outputFolder.isEmpty ? "Chưa chọn" : (outputFolder as NSString).abbreviatingWithTildeInPath)
                             .lineLimit(1).truncationMode(.head)
                             .foregroundStyle(outputFolder.isEmpty ? .secondary : .primary)
-                            .help(outputFolder)
-                        Spacer()
-                        Button("Chọn…") { pickFolder() }
+                            .help("\(outputFolder)\nGiữ nguyên cấu trúc thư mục con của thư mục đầu vào.")
+                        Spacer(minLength: 4)
+                        Button("Đổi…") { model.chooseOutputFolder() }
+                            .controlSize(.small)
                     }
                 }
             } header: {
-                SectionHeader("Nơi lưu", systemImage: "externaldrive")
-            } footer: {
-                if useOutputFolder { Footnote("Giữ nguyên cấu trúc thư mục con của thư mục đầu vào.") }
+                SectionHeader("Nơi lưu kết quả", systemImage: "externaldrive")
             }
 
             Section {
-                Toggle("Bao gồm thư mục con", isOn: $includeSubfolders)
+                Toggle("Gồm cả thư mục con", isOn: $includeSubfolders)
+                    .help("Áp dụng khi thêm thư mục.")
                 Toggle("Đưa tệp gốc vào Thùng rác", isOn: Binding(
                     get: { trashOriginals },
                     set: { on in
                         if on && !trashOriginalsConfirmed { confirmTrash = true } else { trashOriginals = on }
                     }))
+                    .help("Chỉ khi mọi kết quả đã tạo xong. Tệp lỗi hoặc bị huỷ luôn được giữ nguyên.")
             } header: {
-                SectionHeader("Xử lý tệp", systemImage: "folder.badge.gearshape")
-            } footer: {
-                Footnote(trashOriginals
-                         ? "Chỉ khi mọi kết quả đã tạo xong. Tệp lỗi hoặc bị huỷ luôn được giữ nguyên."
-                         : "Áp dụng khi thêm thư mục và sau khi chuyển xong.")
+                SectionHeader("Tệp gốc", systemImage: "folder.badge.gearshape")
             }
 
             Section {
                 Picker("OCR", selection: $ocrMode) {
                     Text("Tự động").tag(OCR.Mode.auto.rawValue)
-                    Text("Luôn nhận dạng").tag(OCR.Mode.force.rawValue)
+                    Text("Luôn").tag(OCR.Mode.force.rawValue)
                     Text("Tắt").tag(OCR.Mode.off.rawValue)
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .help("Tự động: chỉ nhận dạng trang không có chữ (bản scan). "
+                      + "Luôn: dùng khi PDF có lớp chữ bị lỗi phông.")
                 Picker("Công cụ", selection: $ocrEngine) {
                     Text("Apple Vision").tag(OCR.Engine.ocrmac.rawValue)
                     Text("EasyOCR").tag(OCR.Engine.easyocr.rawValue)
                 }
                 .disabled(ocrMode == OCR.Mode.off.rawValue)
                 Toggle("Nhận dạng bảng", isOn: $ocrTables)
+                    .help("Tắt giúp chạy nhanh hơn nhưng bảng sẽ không được tách thành từng ô.")
             } header: {
-                SectionHeader("Nhận dạng chữ", systemImage: "text.viewfinder")
+                SectionHeader("Nhận dạng chữ (PDF scan)", systemImage: "text.viewfinder")
             } footer: {
-                Footnote("Tự động: chỉ OCR trang không có chữ (bản scan). Tiếng Việt và tiếng Anh.")
+                Footnote("Tiếng Việt và tiếng Anh.")
             }
         }
         .formStyle(.grouped)
-        .onChange(of: useOutputFolder) { _, on in
-            if on && outputFolder.isEmpty { pickFolder() }
-        }
         .confirmationDialog("Đưa tệp gốc vào Thùng rác sau khi chuyển?", isPresented: $confirmTrash) {
             Button("Bật tuỳ chọn này", role: .destructive) {
                 trashOriginalsConfirmed = true
@@ -103,20 +108,6 @@ struct OptionsInspector: View {
         } message: {
             Text("Tệp gốc chỉ được chuyển vào Thùng rác khi mọi tệp kết quả đã được tạo thành công, "
                  + "và có thể khôi phục từ Thùng rác. Tệp lỗi, bị huỷ hoặc chuyển chưa đủ sẽ được giữ nguyên.")
-        }
-    }
-
-    private func pickFolder() {
-        let panel = NSOpenPanel()
-        panel.title = "Chọn thư mục lưu kết quả"
-        panel.prompt = "Chọn"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        if panel.runModal() == .OK, let url = panel.url {
-            outputFolder = url.path
-        } else if outputFolder.isEmpty {
-            useOutputFolder = false
         }
     }
 }

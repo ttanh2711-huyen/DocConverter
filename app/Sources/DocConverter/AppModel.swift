@@ -11,6 +11,8 @@ final class AppModel {
     let environment = EnvironmentManager.forApp()
     var selection = Set<JobItem.ID>()
     var showInspector = true
+    /// Bộ lọc danh sách (thanh trên danh sách và các số đếm ở thanh dưới).
+    var filter = ListFilter.all
     var alert: String?
     /// Chỉ dùng cho chế độ tự kiểm tra; bình thường đọc tuỳ chọn người dùng đã lưu.
     var optionsOverride: ConversionOptions?
@@ -63,6 +65,50 @@ final class AppModel {
     func clearList() {
         store.clear()
         selection.removeAll()
+        filter = .all
+    }
+
+    /// Xoá các tệp đã xong (hoặc bị bỏ qua), giữ lại tệp lỗi/đang chờ để chạy tiếp.
+    func removeFinished(including statuses: (JobItem.Status) -> Bool) {
+        let ids = Set(store.items.filter { statuses($0.status) }.map(\.id))
+        store.remove(ids)
+        selection.subtract(ids)
+        if filter.count(in: store.summary) == 0 { filter = .all }
+    }
+
+    // MARK: - Kết quả
+
+    var allOutputs: [URL] { store.items.flatMap(\.revealTargets) }
+
+    func revealAllOutputs() {
+        let targets = allOutputs
+        if !targets.isEmpty { NSWorkspace.shared.activateFileViewerSelecting(targets) }
+    }
+
+    /// Chọn thư mục lưu kết quả; huỷ khi chưa từng chọn thì quay về "Cạnh tệp gốc".
+    func chooseOutputFolder() {
+        let panel = NSOpenPanel()
+        panel.title = "Chọn thư mục lưu kết quả"
+        panel.prompt = "Chọn"
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        let defaults = UserDefaults.standard
+        if let current = defaults.string(forKey: ConversionOptions.Keys.outputFolder), !current.isEmpty {
+            panel.directoryURL = URL(fileURLWithPath: current)
+        }
+        if panel.runModal() == .OK, let url = panel.url {
+            defaults.set(url.path, forKey: ConversionOptions.Keys.outputFolder)
+            defaults.set(true, forKey: ConversionOptions.Keys.useOutputFolder)
+        } else if (defaults.string(forKey: ConversionOptions.Keys.outputFolder) ?? "").isEmpty {
+            defaults.set(false, forKey: ConversionOptions.Keys.useOutputFolder)
+        }
+    }
+
+    /// Số tệp sẽ chạy khi bấm Bắt đầu, và có phải tất cả đều là chạy lại (lỗi/huỷ) không.
+    var startCount: (count: Int, isRetry: Bool) {
+        let jobs = store.pendingJobs
+        return (jobs.count, !jobs.isEmpty && jobs.allSatisfy { $0.status != .pending })
     }
 
     // MARK: - Chuyển đổi
@@ -90,6 +136,7 @@ final class AppModel {
         }
         let runner = ConversionRunner(python: python)
         self.runner = runner
+        filter = .all
         store.markStarted()
         do {
             try runner.start(
@@ -109,5 +156,38 @@ final class AppModel {
 
     func cancel() {
         runner?.cancel()
+    }
+}
+
+/// Bộ lọc danh sách tệp.
+enum ListFilter: String, CaseIterable, Identifiable {
+    case all, active, done, issues
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .all: "Tất cả"
+        case .active: "Đang chờ"
+        case .done: "Hoàn tất"
+        case .issues: "Lỗi"
+        }
+    }
+
+    func includes(_ status: JobItem.Status) -> Bool {
+        switch (self, status) {
+        case (.all, _), (.active, .pending), (.active, .running), (.done, .done),
+             (.issues, .failed), (.issues, .cancelled), (.issues, .skipped): true
+        default: false
+        }
+    }
+
+    func count(in s: JobStore.Summary) -> Int {
+        switch self {
+        case .all: s.total
+        case .active: s.active
+        case .done: s.done
+        case .issues: s.failed + s.cancelled + s.skipped
+        }
     }
 }
