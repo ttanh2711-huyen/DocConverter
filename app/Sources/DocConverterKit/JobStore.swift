@@ -20,6 +20,8 @@ public struct JobItem: Identifiable, Equatable, Sendable {
     public var note: String?
     public var detail: String?
     public var sourceTrashed = false
+    /// Thông tin văn bản (loại, số ký hiệu, ngày, cơ quan, người ký…) khi lõi nhận ra.
+    public var meta: DocumentMeta?
 
     public init(url: URL, base: URL) {
         self.url = url
@@ -39,6 +41,8 @@ public struct JobItem: Identifiable, Equatable, Sendable {
 public final class JobStore {
     public private(set) var items: [JobItem] = []
     public private(set) var isRunning = false
+    /// Kết quả ghi sổ tổng hợp Excel của lần chạy gần nhất.
+    public private(set) var register: RegisterResult?
     /// Gọi khi một tệp xong (để app xử lý tiếp, ví dụ đưa bản gốc vào Thùng rác).
     @ObservationIgnored public var onJobDone: ((JobItem) -> Void)?
 
@@ -119,6 +123,7 @@ public final class JobStore {
 
     public func markStarted() {
         isRunning = true
+        register = nil
         for i in items.indices {
             switch items[i].status {
             case .failed, .cancelled: items[i].status = .pending  // chạy lại các tệp lỗi/huỷ
@@ -141,6 +146,7 @@ public final class JobStore {
                 update(id) {
                     $0.status = .done
                     $0.outputs = (event.outputs ?? []).map { URL(fileURLWithPath: $0) }
+                    $0.meta = event.meta
                 }
                 if let item = items.first(where: { $0.id == id }) { onJobDone?(item) }
             }
@@ -148,6 +154,11 @@ public final class JobStore {
             if let id { update(id) { $0.status = .skipped(event.message ?? "Bỏ qua") } }
         case .error:
             if let id { update(id) { $0.status = .failed(event.message ?? "Lỗi"); $0.detail = event.detail } }
+        case .register:
+            if let path = event.path {
+                register = RegisterResult(url: URL(fileURLWithPath: path), added: event.added ?? 0,
+                                          updated: event.updated ?? 0, total: event.total ?? 0, error: event.error)
+            }
         case .cancelled, .finished:
             if event.kind == .cancelled || event.cancelled == true {
                 for i in items.indices where !items[i].isFinished { items[i].status = .cancelled }
@@ -168,6 +179,15 @@ public final class JobStore {
         }
         isRunning = false
     }
+}
+
+/// Kết quả ghi sổ tổng hợp.
+public struct RegisterResult: Equatable, Sendable {
+    public let url: URL
+    public let added: Int
+    public let updated: Int
+    public let total: Int
+    public let error: String?
 }
 
 extension JobItem {

@@ -6,7 +6,7 @@
 docconv convert [INPUT ...] [--manifest FILE|-] [--recursive]
                 [--to md|docx|md,docx]
                 [--out-mode beside|dir] [--out DIR]
-                [--overwrite] [--json]
+                [--overwrite] [--json] [--register SỔ.xlsx]
 ```
 
 - `INPUT` là tệp hoặc thư mục. Với thư mục, chỉ lấy tệp ngay trong thư mục đó; thêm `--recursive` để lấy cả thư mục con. Tệp/thư mục ẩn (tên bắt đầu bằng `.`) bị bỏ qua mà không báo. Tệp có đuôi không hỗ trợ trong thư mục sinh sự kiện `skipped`.
@@ -15,6 +15,7 @@ docconv convert [INPUT ...] [--manifest FILE|-] [--recursive]
 - `--out-mode beside` (mặc định): ghi cạnh tệp gốc. `--out-mode dir --out DIR`: ghi vào `DIR/<đường dẫn tương đối của thư mục chứa tệp so với base>/`.
 - Không ghi đè: nếu tên đã tồn tại thì thêm hậu tố ` (1)`, ` (2)`…; `--overwrite` để ghi đè.
 - Ảnh của `.md` (từ PDF) nằm trong thư mục `<tên>_assets/` cạnh tệp `.md`.
+- `--register`: sau khi chạy xong (kể cả khi bị huỷ), ghi các văn bản hành chính đã chuyển thành công vào sổ Excel (trang tính "Sổ văn bản"): loại văn bản, số ký hiệu, ngày ban hành, cơ quan ban hành, trích yếu, người ký, chức vụ, tệp gốc. Sổ được cộng dồn qua các lần chạy; tệp gốc đã có trong sổ thì cập nhật dòng cũ. Tệp không nhận ra là văn bản hành chính (bảng tính, CSV…) không được ghi.
 - Mọi đầu ra được tạo trong thư mục tạm `.docconv-tmp-*` cùng thư mục đích, và chỉ được chuyển vào chỗ khi tệp đó **đã thành công toàn bộ**. Lỗi hoặc huỷ thì không để lại tệp dở dang.
 
 ## Sự kiện (`--json`)
@@ -26,10 +27,11 @@ Mỗi dòng stdout là **một đối tượng JSON** (UTF-8). Log của thư vi
 | `start` | `file`, `index` (từ 1), `total`, `kind` (`pdf`\|`markitdown`), `pages` (số trang PDF hoặc `null`) | Bắt đầu xử lý một tệp |
 | `progress` | `file`, `stage` (`analyze`\|`markdown`\|`docx`), `message` | Chuyển sang bước mới |
 | `warning` | `file`, `message` | Cảnh báo, vẫn tiếp tục |
-| `done` | `file`, `outputs` (danh sách đường dẫn tuyệt đối: `.md`, thư mục `_assets`, `.docx`), `seconds` | Tệp đã xong; mọi đầu ra đã nằm đúng chỗ |
+| `done` | `file`, `outputs` (danh sách đường dẫn tuyệt đối: `.md`, thư mục `_assets`, `.docx`), `seconds`, `meta` (không bắt buộc) | Tệp đã xong; mọi đầu ra đã nằm đúng chỗ. `meta`: các trường nhận ra được trong `doc_type`, `number`, `date` (yyyy-mm-dd), `issuer`, `signer`, `position`, `summary` |
 | `skipped` | `file`, `message` | Bỏ qua (đuôi không hỗ trợ khi quét thư mục) |
 | `error` | `file`, `message` (tiếng Việt, cho người dùng), `detail` (kỹ thuật) | Tệp lỗi; các tệp khác vẫn tiếp tục |
 | `cancelled` | | Nhận SIGTERM/SIGINT; đã dọn tệp dở dang |
+| `register` | `path`, rồi `added`, `updated`, `total` hoặc `error` | Chỉ khi có `--register`: kết quả ghi sổ tổng hợp, ngay trước `finished` |
 | `finished` | `ok`, `failed`, `skipped`, `cancelled` (bool) | Dòng cuối cùng |
 
 Ví dụ:
@@ -39,9 +41,10 @@ Ví dụ:
 {"event": "progress", "file": "/Users/a/Tài liệu/x.pdf", "stage": "analyze", "message": "Đang phân tích bố cục (2 trang)"}
 {"event": "progress", "file": "/Users/a/Tài liệu/x.pdf", "stage": "markdown", "message": "Đang ghi Markdown"}
 {"event": "progress", "file": "/Users/a/Tài liệu/x.pdf", "stage": "docx", "message": "Đang tạo Word"}
-{"event": "done", "file": "/Users/a/Tài liệu/x.pdf", "outputs": ["/Users/a/Tài liệu/x.md", "/Users/a/Tài liệu/x_assets", "/Users/a/Tài liệu/x.docx"], "seconds": 12.4}
+{"event": "done", "file": "/Users/a/Tài liệu/x.pdf", "outputs": ["/Users/a/Tài liệu/x.md", "/Users/a/Tài liệu/x_assets", "/Users/a/Tài liệu/x.docx"], "seconds": 12.4, "meta": {"doc_type": "Quyết định", "number": "12/QĐ-UBND", "date": "2026-03-15", "issuer": "ỦY BAN NHÂN DÂN TỈNH CÀ MAU", "signer": "Nguyễn Văn Bình", "position": "KT. CHỦ TỊCH, PHÓ CHỦ TỊCH"}}
 {"event": "start", "file": "/Users/a/Tài liệu/cu.doc", "index": 2, "total": 2, "kind": null, "pages": null}
 {"event": "error", "file": "/Users/a/Tài liệu/cu.doc", "message": "Không hỗ trợ định dạng .doc: cu.doc", "detail": "UnsupportedFormat"}
+{"event": "register", "path": "/Users/a/Documents/Tổng hợp văn bản.xlsx", "added": 1, "updated": 0, "total": 37}
 {"event": "finished", "ok": 1, "failed": 1, "skipped": 0, "cancelled": false}
 ```
 

@@ -7,6 +7,7 @@ import DocConverterKit
 ///   DOCCONV_TEST_FORMAT=md|docx|md,docx  định dạng cho PDF;  DOCCONV_TEST_OUT=/thư/mục  lưu vào thư mục khác
 ///   DOCCONV_TEST_CANCEL_AFTER=3          bấm "Huỷ" sau 3 giây
 ///   DOCCONV_TEST_OCR=auto|off|force, DOCCONV_TEST_OCR_ENGINE=ocrmac|easyocr
+///   DOCCONV_TEST_REGISTER=/tmp/so.xlsx   ghi sổ tổng hợp vào tệp này (DOCCONV_TEST_REGISTER= để tắt)
 ///   DOCCONV_TEST_TRASH=1                 bật "Xoá tệp gốc" cho lần chạy này
 ///   DOCCONV_TEST_SNAPSHOT=/tmp/x.png    khi xong, chụp cửa sổ ra PNG rồi thoát (không có FILES: chụp màn hình trống)
 ///   DOCCONV_TEST_SIZE=860x540             đổi cỡ cửa sổ trước khi chụp (kiểm tra bố cục khi hẹp)
@@ -42,6 +43,7 @@ enum SelfTest {
         if let e = env["DOCCONV_TEST_OCR_ENGINE"].flatMap(ConversionOptions.OCR.Engine.init(rawValue:)) {
             options.ocr.engine = e
         }
+        if let book = env["DOCCONV_TEST_REGISTER"] { options.register = book.isEmpty ? nil : URL(fileURLWithPath: book) }
         model.optionsOverride = options
         model.trashOriginalsOverride = env["DOCCONV_TEST_TRASH"] == "1"
         model.start()

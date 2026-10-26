@@ -87,13 +87,15 @@ struct JobRow: View {
                     .font(.caption)
                     .foregroundStyle(subtitleStyle)
                     .lineLimit(1).truncationMode(.middle)
-                    .help(item.status == .pending ? (item.url.path as NSString).abbreviatingWithTildeInPath : subtitle)
+                    .help(tooltip)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             actions
             if item.status == .pending, !targetFormats.isEmpty {
                 FormatChips(formats: targetFormats)
+            } else if item.status == .done, !createdFormats.isEmpty {
+                FormatChips(formats: createdFormats, arrow: false)
             }
             StatusBadge(status: item.status)
                 .frame(width: 96, alignment: .trailing)
@@ -123,6 +125,21 @@ struct JobRow: View {
         }
     }
 
+    /// Đuôi các tệp đã tạo (bỏ thư mục ảnh).
+    private var createdFormats: [String] {
+        item.revealTargets.map { $0.pathExtension.uppercased() }
+    }
+
+    private var tooltip: String {
+        if item.status == .pending { return (item.url.path as NSString).abbreviatingWithTildeInPath }
+        guard let m = item.meta else { return subtitle }
+        let fields: [(String, String?)] = [
+            ("Loại văn bản", m.docType), ("Số, ký hiệu", m.number), ("Ngày ban hành", m.displayDate),
+            ("Cơ quan ban hành", m.issuer), ("Người ký", m.signer), ("Chức vụ", m.position), ("Trích yếu", m.summary),
+        ]
+        return fields.compactMap { label, value in value.map { "\(label): \($0)" } }.joined(separator: "\n")
+    }
+
     /// Đuôi tệp sẽ tạo ra, theo tuỳ chọn hiện tại (chỉ hiện khi tệp đang chờ).
     private var targetFormats: [String] {
         guard item.url.pathExtension.lowercased() == "pdf" else { return ["MD"] }
@@ -140,7 +157,9 @@ struct JobRow: View {
         case .running(let message): return message
         case .done:
             let kinds = item.revealTargets.map { "." + $0.pathExtension }
-            var parts = ["Đã tạo " + (kinds.isEmpty ? "kết quả" : kinds.joined(separator: ", "))]
+            // Văn bản hành chính: hiện ngay loại, số ký hiệu, ngày, người ký thay cho dòng "Đã tạo …".
+            let headline = item.meta?.headline ?? ""
+            var parts = [headline.isEmpty ? "Đã tạo " + (kinds.isEmpty ? "kết quả" : kinds.joined(separator: ", ")) : headline]
             if item.sourceTrashed { parts.append("tệp gốc đã vào Thùng rác") }
             if let note = item.note { parts.append(note) }
             return parts.joined(separator: " · ")
@@ -192,10 +211,13 @@ private struct RowButton: View {
 /// Nhãn định dạng đầu ra, ví dụ "→ MD DOCX".
 struct FormatChips: View {
     let formats: [String]
+    var arrow = true
 
     var body: some View {
         HStack(spacing: 3) {
-            Image(systemName: "arrow.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+            if arrow {
+                Image(systemName: "arrow.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
+            }
             ForEach(formats, id: \.self) { f in
                 Text(f)
                     .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
@@ -204,7 +226,7 @@ struct FormatChips: View {
                     .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 4))
             }
         }
-        .help("Định dạng sẽ tạo ra")
+        .help(arrow ? "Định dạng sẽ tạo ra" : "Định dạng đã tạo")
     }
 }
 

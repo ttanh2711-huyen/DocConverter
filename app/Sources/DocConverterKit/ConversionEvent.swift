@@ -3,7 +3,7 @@ import Foundation
 /// Một dòng sự kiện JSON từ `docconv convert --json` (xem core/PROTOCOL.md).
 public struct ConversionEvent: Decodable, Sendable, Equatable {
     public enum Kind: String, Decodable, Sendable {
-        case start, progress, warning, done, skipped, error, cancelled, finished
+        case start, progress, warning, done, skipped, error, cancelled, register, finished
     }
 
     public let kind: Kind
@@ -20,10 +20,18 @@ public struct ConversionEvent: Decodable, Sendable, Equatable {
     public var failed: Int?
     public var skipped: Int?
     public var cancelled: Bool?
+    /// `done`: thông tin văn bản nhận ra được.
+    public var meta: DocumentMeta?
+    /// `register`: sổ tổng hợp đã ghi (hoặc lỗi).
+    public var path: String?
+    public var added: Int?
+    public var updated: Int?
+    public var error: String?
 
     enum CodingKeys: String, CodingKey {
         case kind = "event"
         case file, index, total, pages, stage, message, detail, outputs, seconds, ok, failed, skipped, cancelled
+        case meta, path, added, updated, error
     }
 
     public init(kind: Kind, file: String? = nil) {
@@ -33,6 +41,46 @@ public struct ConversionEvent: Decodable, Sendable, Equatable {
 
     public static func decode(line: String) throws -> ConversionEvent {
         try JSONDecoder().decode(ConversionEvent.self, from: Data(line.utf8))
+    }
+}
+
+/// Thông tin văn bản hành chính do lõi trích ra (trường nào không nhận ra thì `nil`).
+public struct DocumentMeta: Decodable, Sendable, Equatable {
+    public var docType: String?
+    public var number: String?
+    public var date: String?
+    public var issuer: String?
+    public var signer: String?
+    public var position: String?
+    public var summary: String?
+
+    enum CodingKeys: String, CodingKey {
+        case docType = "doc_type"
+        case number, date, issuer, signer, position, summary
+    }
+
+    public init(docType: String? = nil, number: String? = nil, date: String? = nil, issuer: String? = nil,
+                signer: String? = nil, position: String? = nil, summary: String? = nil) {
+        self.docType = docType
+        self.number = number
+        self.date = date
+        self.issuer = issuer
+        self.signer = signer
+        self.position = position
+        self.summary = summary
+    }
+
+    /// "2026-03-15" → "15/03/2026".
+    public var displayDate: String? {
+        guard let date else { return nil }
+        let parts = date.split(separator: "-")
+        return parts.count == 3 ? "\(parts[2])/\(parts[1])/\(parts[0])" : date
+    }
+
+    /// Một dòng tóm tắt: "Quyết định 12/QĐ-UBND · 15/03/2026 · Nguyễn Văn Bình".
+    public var headline: String {
+        let title = [docType, number].compactMap { $0 }.joined(separator: " ")
+        return [title.isEmpty ? nil : title, displayDate, signer].compactMap { $0 }.joined(separator: " · ")
     }
 }
 

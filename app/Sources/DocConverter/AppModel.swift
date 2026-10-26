@@ -105,6 +105,49 @@ final class AppModel {
         }
     }
 
+    // MARK: - Sổ tổng hợp
+
+    /// Sổ Excel đang dùng (theo tuỳ chọn), `nil` khi tắt ghi sổ.
+    var registerURL: URL? {
+        ConversionOptions.load().register
+    }
+
+    func openRegister() {
+        guard let url = store.register?.url ?? registerURL else { return }
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.open(url)
+        } else {
+            alert = "Sổ \(url.lastPathComponent) chưa có. Sổ được tạo sau lần chuyển đổi đầu tiên có văn bản hành chính."
+        }
+    }
+
+    /// Chọn sổ có sẵn (`existing`) hoặc đặt tên sổ mới.
+    func chooseRegister(existing: Bool) {
+        let current = registerURL ?? ConversionOptions.defaultRegister
+        let url: URL?
+        if existing {
+            let panel = NSOpenPanel()
+            panel.title = "Chọn sổ tổng hợp có sẵn"
+            panel.message = "Văn bản mới sẽ được ghi thêm vào sổ; dữ liệu cũ được giữ nguyên."
+            panel.prompt = "Dùng sổ này"
+            panel.allowedContentTypes = [UTType(filenameExtension: "xlsx")].compactMap { $0 }
+            panel.directoryURL = current.deletingLastPathComponent()
+            url = panel.runModal() == .OK ? panel.url : nil
+        } else {
+            let panel = NSSavePanel()
+            panel.title = "Tạo sổ tổng hợp mới"
+            panel.prompt = "Tạo"
+            panel.allowedContentTypes = [UTType(filenameExtension: "xlsx")].compactMap { $0 }
+            panel.nameFieldStringValue = "Tổng hợp văn bản.xlsx"
+            panel.directoryURL = current.deletingLastPathComponent()
+            panel.canCreateDirectories = true
+            url = panel.runModal() == .OK ? panel.url : nil
+        }
+        guard let url else { return }
+        UserDefaults.standard.set(url.path, forKey: ConversionOptions.Keys.registerPath)
+        UserDefaults.standard.set(true, forKey: ConversionOptions.Keys.registerEnabled)
+    }
+
     /// Số tệp sẽ chạy khi bấm Bắt đầu, và có phải tất cả đều là chạy lại (lỗi/huỷ) không.
     var startCount: (count: Int, isRetry: Bool) {
         let jobs = store.pendingJobs
@@ -142,10 +185,13 @@ final class AppModel {
             try runner.start(
                 arguments: options.arguments,
                 manifest: ConversionOptions.manifest(for: jobs),
-                onEvent: { [store] event in
+                onEvent: { [store, weak self] event in
                     // Cảnh báo "Word chỉ áp dụng cho PDF" lặp ở mọi tệp khác PDF; bảng tuỳ chọn đã ghi rõ điều này.
                     if event.kind == .warning, event.message?.contains("chỉ áp dụng cho PDF") == true { return }
                     store.apply(event)
+                    if event.kind == .register, let error = event.error {
+                        self?.alert = error + "\nTệp kết quả vẫn được tạo bình thường. Nếu sổ đang mở trong Excel, hãy đóng lại rồi chạy lại."
+                    }
                 },
                 onExit: { [store] status, tail in store.processExited(status: status, stderrTail: tail) })
         } catch {

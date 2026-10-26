@@ -30,6 +30,7 @@
 └──────────────────────────────────────────────────┴─────────────────────────┘
 ```
 
+- **Sổ tổng hợp (Excel)**: mỗi văn bản hành chính chuyển xong được ghi một dòng vào sổ (xem mục *Sổ tổng hợp văn bản*). Dòng của văn bản trong danh sách hiện luôn loại, số ký hiệu, ngày ban hành và người ký; rê chuột để xem đủ cơ quan ban hành, chức vụ, trích yếu.
 - **Thanh lọc** trên danh sách: xem riêng tệp đang chờ, hoàn tất hoặc lỗi (⌘1–⌘4) thay vì cuộn tìm. Bấm số đếm ở thanh dưới cũng lọc nhanh.
 - **Dọn danh sách**: xoá mục đã hoàn tất, mục bị bỏ qua, mục đã chọn hoặc cả danh sách.
 - **Rê chuột lên một dòng** hiện nút ↗ mở kết quả, 📁 hiện trong Finder, ⓧ xoá khỏi danh sách. Tệp đang chờ có nhãn định dạng sẽ tạo (→ MD, DOCX) theo tuỳ chọn hiện tại.
@@ -42,6 +43,7 @@
 | ⌘R hoặc ↩ | Bắt đầu chuyển đổi |
 | ⌘. hoặc Esc | Huỷ |
 | ⇧⌘R | Hiện tất cả kết quả trong Finder |
+| ⇧⌘E | Mở sổ tổng hợp (Excel) |
 | ⌘1 / ⌘2 / ⌘3 / ⌘4 | Lọc: Tất cả / Đang chờ / Hoàn tất / Lỗi |
 | ⌫ / ⇧⌘⌫ | Xoá mục đã chọn / xoá cả danh sách |
 | ⌥⌘I | Ẩn/hiện bảng tuỳ chọn |
@@ -61,6 +63,27 @@
 4. Bấm **Chuyển đổi** ở góc dưới bên phải. Mỗi tệp có nhãn trạng thái riêng, thanh dưới cùng hiện tiến độ tổng. Bấm đúp một dòng để mở kết quả, bấm **Xem kết quả** để hiện tất cả trong Finder, bấm biểu tượng ❗ đỏ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
 
 Tên kết quả không bao giờ ghi đè tệp có sẵn: nếu `a.md` đã tồn tại, app tạo `a (1).md`. Ảnh trong tệp Markdown nằm trong thư mục `<tên>_assets/` bên cạnh.
+
+### Sổ tổng hợp văn bản
+
+Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổng hợp, mặc định **bật**) để mỗi lần chuyển đổi, app tự nhận các thông tin theo thể thức văn bản hành chính (Nghị định 30/2020/NĐ-CP) và ghi vào một tệp Excel chung, mặc định `~/Documents/Tổng hợp văn bản.xlsx`:
+
+| Cột | Ví dụ |
+|---|---|
+| Loại văn bản | Quyết định (lấy từ tên loại; không có thì suy từ ký hiệu, ví dụ `QĐ`, `KH`; ký hiệu dạng `45/UBND-KT` là Công văn) |
+| Số, ký hiệu | 1234/QĐ-UBND |
+| Ngày ban hành | 15/03/2026 (kiểu ngày của Excel, lọc và sắp xếp được) |
+| Cơ quan ban hành | ỦY BAN NHÂN DÂN TỈNH CÀ MAU |
+| Trích yếu nội dung | Về việc phê duyệt Kế hoạch sử dụng đất năm 2026… |
+| Người ký, Chức vụ người ký | Nguyễn Văn Bình — KT. CHỦ TỊCH, PHÓ CHỦ TỊCH |
+| Tên tệp (bấm để mở), Đường dẫn tệp gốc, Ngày ghi nhận | |
+| Cần kiểm tra | "Thiếu người ký"… — dòng được tô vàng khi app không nhận ra đủ 5 trường chính |
+
+- Sổ được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
+- Chỉ ghi văn bản hành chính; bảng tính, CSV, ảnh… không có số ký hiệu/ngày ban hành thì không ghi.
+- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, thanh dưới hiện "n văn bản vào sổ" — bấm để mở.
+- Nếu không ghi được (ví dụ sổ đang mở và bị khoá), app báo lỗi; tệp kết quả vẫn được tạo bình thường. Đóng sổ rồi chạy lại để ghi.
+- Thông tin được nhận bằng quy tắc nên có thể sai với văn bản trình bày khác thể thức hoặc bản scan mờ: hãy xem cột **Cần kiểm tra** và rà lại trước khi dùng.
 
 ### Xoá tệp gốc
 

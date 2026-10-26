@@ -77,6 +77,8 @@ struct AppCommands: Commands {
             Button("Hiện kết quả trong Finder") { model.revealAllOutputs() }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(model.store.isRunning || model.allOutputs.isEmpty)
+            Button("Mở sổ tổng hợp (Excel)") { model.openRegister() }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
             Divider()
             Button("Xoá mục đã chọn") { model.removeSelected() }
                 .keyboardShortcut(.delete, modifiers: [])

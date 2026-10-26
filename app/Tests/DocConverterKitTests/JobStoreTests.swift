@@ -20,6 +20,18 @@ func ev(_ json: String) -> ConversionEvent {
     #expect(store.items[0].outputs.map(\.lastPathComponent) == ["x.md", "x_assets", "x.docx"])
     #expect(store.items[1].status == .failed("Không hỗ trợ định dạng .doc: cu.doc"))
     #expect(store.items[1].detail == "UnsupportedFormat")
+    #expect(store.items[0].meta?.number == "12/QĐ-UBND")
+    #expect(store.register?.url.lastPathComponent == "Tổng hợp văn bản.xlsx")
+    #expect(store.register?.added == 1 && store.register?.error == nil)
+}
+
+@Test @MainActor func registerErrorIsKeptAndClearedOnNextRun() {
+    let store = JobStore()
+    store.add(files: [URL(fileURLWithPath: "/a/1.docx")])
+    store.apply(ev(#"{"event":"register","path":"/a/so.xlsx","error":"Không ghi được sổ tổng hợp so.xlsx"}"#))
+    #expect(store.register?.error == "Không ghi được sổ tổng hợp so.xlsx")
+    store.markStarted()
+    #expect(store.register == nil)
 }
 
 @Test @MainActor func warningIsKeptAsNote() {
