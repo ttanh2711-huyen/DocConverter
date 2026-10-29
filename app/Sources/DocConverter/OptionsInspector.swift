@@ -1,11 +1,12 @@
-import AppKit
 import DocConverterKit
 import SwiftUI
 
-/// Bảng tuỳ chọn bên phải, xếp theo thứ tự thao tác: đầu vào → định dạng → nơi lưu → sau khi chuyển → OCR.
+/// Bảng tuỳ chọn bên phải, xếp theo thứ tự thao tác: kết quả → nơi lưu → tệp gốc → OCR.
+/// Gọn để vừa một màn hình, không phải cuộn; giải thích dài nằm trong chú thích khi rê chuột.
 struct OptionsInspector: View {
     typealias Keys = ConversionOptions.Keys
     typealias OCR = ConversionOptions.OCR
+    let model: AppModel
     @AppStorage("includeSubfolders") private var includeSubfolders = true
     @AppStorage(Keys.pdfFormat) private var pdfFormat = ConversionOptions.PDFFormat.markdown.rawValue
     @AppStorage(Keys.useOutputFolder) private var useOutputFolder = false
@@ -13,87 +14,109 @@ struct OptionsInspector: View {
     @AppStorage(Keys.trashOriginals) private var trashOriginals = false
     @AppStorage(Keys.trashOriginalsConfirmed) private var trashOriginalsConfirmed = false
     @AppStorage(Keys.ocrMode) private var ocrMode = OCR.Mode.auto.rawValue
-    @AppStorage(Keys.ocrEngine) private var ocrEngine = OCR.Engine.ocrmac.rawValue
-    @AppStorage(Keys.ocrTables) private var ocrTables = true
+    @AppStorage(Keys.registerEnabled) private var registerEnabled = true
+    @AppStorage(Keys.registerPath) private var registerPath = ""
     @State private var confirmTrash = false
+
+    private var registerURL: URL {
+        registerPath.isEmpty ? ConversionOptions.defaultRegister : URL(fileURLWithPath: registerPath)
+    }
 
     var body: some View {
         Form {
             Section {
-                Picker("Định dạng", selection: $pdfFormat) {
-                    Text("Markdown").tag(ConversionOptions.PDFFormat.markdown.rawValue)
-                    Text("Word").tag(ConversionOptions.PDFFormat.word.rawValue)
-                    Text("Cả hai").tag(ConversionOptions.PDFFormat.both.rawValue)
+                InlineRow("PDF") {
+                    Picker("PDF", selection: $pdfFormat) {
+                        Text("Markdown").tag(ConversionOptions.PDFFormat.markdown.rawValue)
+                        Text("Word").tag(ConversionOptions.PDFFormat.word.rawValue)
+                        Text("Cả hai").tag(ConversionOptions.PDFFormat.both.rawValue)
+                    }
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            } header: {
-                SectionHeader("Đầu ra cho PDF", systemImage: "doc.richtext")
-            } footer: {
-                Footnote("Word, Excel, PowerPoint, HTML… luôn được chuyển sang Markdown.")
-            }
-
-            Section {
-                Picker("Nơi lưu", selection: $useOutputFolder) {
-                    Text("Cạnh tệp gốc").tag(false)
-                    Text("Thư mục khác").tag(true)
+                .help("Định dạng tạo ra từ PDF. Word, Excel, PowerPoint, HTML, CSV… luôn được chuyển sang Markdown.")
+                InlineRow("Lưu") {
+                    Picker("Lưu", selection: Binding(
+                        get: { useOutputFolder },
+                        set: { on in
+                            if on && outputFolder.isEmpty { model.chooseOutputFolder() } else { useOutputFolder = on }
+                        })) {
+                        Text("Cạnh tệp gốc").tag(false)
+                        Text("Thư mục khác").tag(true)
+                    }
                 }
-                .pickerStyle(.radioGroup)
-                .labelsHidden()
                 if useOutputFolder {
-                    HStack(spacing: 8) {
-                        Image(systemName: "folder.fill").foregroundStyle(.tint)
-                        Text(outputFolder.isEmpty ? "Chưa chọn" : (outputFolder as NSString).abbreviatingWithTildeInPath)
-                            .lineLimit(1).truncationMode(.head)
-                            .foregroundStyle(outputFolder.isEmpty ? .secondary : .primary)
-                            .help(outputFolder)
-                        Spacer()
-                        Button("Chọn…") { pickFolder() }
+                    FileRow(icon: "folder.fill",
+                            name: outputFolder.isEmpty ? "Chưa chọn" : (outputFolder as NSString).abbreviatingWithTildeInPath,
+                            help: "\(outputFolder)\nGiữ nguyên cấu trúc thư mục con của thư mục đầu vào.") {
+                        Button("Đổi…") { model.chooseOutputFolder() }
                     }
                 }
             } header: {
-                SectionHeader("Nơi lưu", systemImage: "externaldrive")
+                SectionHeader("Kết quả", systemImage: "doc.richtext.fill", color: .blue)
             } footer: {
-                if useOutputFolder { Footnote("Giữ nguyên cấu trúc thư mục con của thư mục đầu vào.") }
+                Footnote("Tệp Office, HTML, CSV… luôn ra Markdown.")
             }
 
             Section {
-                Toggle("Bao gồm thư mục con", isOn: $includeSubfolders)
+                Toggle("Ghi thông tin văn bản vào sổ", isOn: $registerEnabled)
+                if registerEnabled {
+                    FileRow(icon: "tablecells.fill", name: registerURL.deletingPathExtension().lastPathComponent,
+                            help: registerURL.path, tint: Theme.seal) {
+                        Button("Mở") { model.openRegister() }
+                            .help("Mở sổ trong Excel/Numbers (⇧⌘E)")
+                        Menu("Đổi") {
+                            Button("Chọn sổ có sẵn…") { model.chooseRegister(existing: true) }
+                            Button("Tạo sổ mới…") { model.chooseRegister(existing: false) }
+                            if !registerPath.isEmpty {
+                                Divider()
+                                Button("Dùng sổ mặc định trong Tài liệu") { registerPath = "" }
+                            }
+                        }
+                        .menuStyle(.borderlessButton)
+                        .fixedSize()
+                    }
+                }
+            } header: {
+                SectionHeader("Sổ tổng hợp (Excel)", systemImage: "checkmark.seal.fill", color: Theme.seal)
+            } footer: {
+                Footnote("Loại, số ký hiệu, ngày ban hành, cơ quan, người ký, trích yếu; cộng dồn mỗi lần chuyển.")
+            }
+
+            Section {
+                Toggle("Gồm cả thư mục con", isOn: $includeSubfolders)
+                    .help("Áp dụng khi thêm thư mục.")
                 Toggle("Đưa tệp gốc vào Thùng rác", isOn: Binding(
                     get: { trashOriginals },
                     set: { on in
                         if on && !trashOriginalsConfirmed { confirmTrash = true } else { trashOriginals = on }
                     }))
+                    .help("Chỉ khi mọi kết quả đã tạo xong. Tệp lỗi hoặc bị huỷ luôn được giữ nguyên.")
             } header: {
-                SectionHeader("Xử lý tệp", systemImage: "folder.badge.gearshape")
-            } footer: {
-                Footnote(trashOriginals
-                         ? "Chỉ khi mọi kết quả đã tạo xong. Tệp lỗi hoặc bị huỷ luôn được giữ nguyên."
-                         : "Áp dụng khi thêm thư mục và sau khi chuyển xong.")
+                SectionHeader("Tệp gốc", systemImage: "folder.fill", color: .brown)
             }
 
             Section {
                 Picker("OCR", selection: $ocrMode) {
                     Text("Tự động").tag(OCR.Mode.auto.rawValue)
-                    Text("Luôn nhận dạng").tag(OCR.Mode.force.rawValue)
+                    Text("Luôn").tag(OCR.Mode.force.rawValue)
                     Text("Tắt").tag(OCR.Mode.off.rawValue)
                 }
-                Picker("Công cụ", selection: $ocrEngine) {
-                    Text("Apple Vision").tag(OCR.Engine.ocrmac.rawValue)
-                    Text("EasyOCR").tag(OCR.Engine.easyocr.rawValue)
-                }
-                .disabled(ocrMode == OCR.Mode.off.rawValue)
-                Toggle("Nhận dạng bảng", isOn: $ocrTables)
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .help("Tự động: chỉ nhận dạng trang không có chữ (bản scan). "
+                      + "Luôn: dùng khi PDF có lớp chữ bị lỗi phông.")
             } header: {
-                SectionHeader("Nhận dạng chữ", systemImage: "text.viewfinder")
+                SectionHeader("Nhận dạng chữ (PDF scan)", systemImage: "text.viewfinder", color: .teal)
             } footer: {
-                Footnote("Tự động: chỉ OCR trang không có chữ (bản scan). Tiếng Việt và tiếng Anh.")
+                HStack(spacing: 4) {
+                    Footnote("Tiếng Việt và tiếng Anh.")
+                    SettingsLink { Text("Công cụ, bảng…").font(.caption) }
+                        .buttonStyle(.link)
+                        .fixedSize()
+                        .help("Chọn công cụ OCR và nhận dạng bảng trong Cài đặt (⌘,)")
+                }
             }
         }
         .formStyle(.grouped)
-        .onChange(of: useOutputFolder) { _, on in
-            if on && outputFolder.isEmpty { pickFolder() }
-        }
         .confirmationDialog("Đưa tệp gốc vào Thùng rác sau khi chuyển?", isPresented: $confirmTrash) {
             Button("Bật tuỳ chọn này", role: .destructive) {
                 trashOriginalsConfirmed = true
@@ -105,18 +128,42 @@ struct OptionsInspector: View {
                  + "và có thể khôi phục từ Thùng rác. Tệp lỗi, bị huỷ hoặc chuyển chưa đủ sẽ được giữ nguyên.")
         }
     }
+}
 
-    private func pickFolder() {
-        let panel = NSOpenPanel()
-        panel.title = "Chọn thư mục lưu kết quả"
-        panel.prompt = "Chọn"
-        panel.canChooseFiles = false
-        panel.canChooseDirectories = true
-        panel.canCreateDirectories = true
-        if panel.runModal() == .OK, let url = panel.url {
-            outputFolder = url.path
-        } else if outputFolder.isEmpty {
-            useOutputFolder = false
+/// Nhãn ngắn bên trái và bộ chọn phân đoạn trên cùng một dòng (gọn hơn kiểu nhãn nằm trên).
+private struct InlineRow<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    init(_ title: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Text(title).foregroundStyle(.secondary).frame(width: 30, alignment: .leading)
+            content.pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// Dòng tệp/thư mục: biểu tượng, tên (rút gọn đầu), các nút bên phải.
+private struct FileRow<Actions: View>: View {
+    let icon: String
+    let name: String
+    let help: String
+    var tint: Color = .accentColor
+    @ViewBuilder let actions: Actions
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).foregroundStyle(tint)
+            Text(name)
+                .lineLimit(1).truncationMode(.middle)
+                .help(help)
+            Spacer(minLength: 4)
+            actions.controlSize(.small)
         }
     }
 }
@@ -124,16 +171,21 @@ struct OptionsInspector: View {
 private struct SectionHeader: View {
     let title: String
     let systemImage: String
+    let color: Color
 
-    init(_ title: String, systemImage: String) {
+    init(_ title: String, systemImage: String, color: Color) {
         self.title = title
         self.systemImage = systemImage
+        self.color = color
     }
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
+        HStack(spacing: 7) {
+            IconTile(systemImage: systemImage, color: color)
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
     }
 }
 

@@ -29,7 +29,7 @@ struct ContentView: View {
     }
 }
 
-/// Bố cục chính: danh sách tệp ở giữa, bảng tuỳ chọn bên phải, thanh trạng thái phía dưới.
+/// Bố cục chính: thanh lọc + danh sách tệp ở giữa, bảng tuỳ chọn bên phải, thanh thao tác phía dưới.
 struct MainView: View {
     @Bindable var model: AppModel
     @State private var dropTargeted = false
@@ -40,16 +40,26 @@ struct MainView: View {
                 if model.store.items.isEmpty {
                     EmptyDropView(model: model, targeted: dropTargeted)
                 } else {
-                    JobListView(model: model)
-                        .overlay {
-                            if dropTargeted {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .strokeBorder(Color.accentColor, lineWidth: 2)
-                                    .background(Color.accentColor.opacity(0.06), in: .rect(cornerRadius: 10))
-                                    .padding(6)
-                                    .allowsHitTesting(false)
-                            }
+                    VStack(spacing: 0) {
+                        ListHeader(model: model)
+                        Divider()
+                        JobListView(model: model)
+                    }
+                    .overlay {
+                        if dropTargeted {
+                            RoundedRectangle(cornerRadius: 12)
+                                .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [7, 5]))
+                                .background(Color.accentColor.opacity(0.07), in: .rect(cornerRadius: 12))
+                                .overlay {
+                                    Label("Thả để thêm vào danh sách", systemImage: "plus.circle.fill")
+                                        .font(.headline)
+                                        .padding(.horizontal, 14).padding(.vertical, 8)
+                                        .background(.regularMaterial, in: .capsule)
+                                }
+                                .padding(8)
+                                .allowsHitTesting(false)
                         }
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -59,20 +69,19 @@ struct MainView: View {
                 return true
             } isTargeted: { dropTargeted = $0 }
 
-            Divider()
-            StatusBar(model: model)
         }
-        .navigationTitle("DocConverter")
+        .navigationTitle(model.store.items.isEmpty ? "DocConverter" : "\(model.store.items.count) tệp")
+        .toolbar(removing: .title)
         .toolbar { toolbar }
         .inspector(isPresented: $model.showInspector) {
-            OptionsInspector()
+            OptionsInspector(model: model)
                 .disabled(model.store.isRunning)
-                .inspectorColumnWidth(min: 280, ideal: 310, max: 380)
+                .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
         }
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItemGroup(placement: .navigation) {
+        ToolbarItem(placement: .navigation) {
             Menu {
                 Button("Chọn tệp…", systemImage: "doc") { model.chooseFiles() }
                 Button("Chọn thư mục…", systemImage: "folder") { model.chooseFolders() }
@@ -81,18 +90,74 @@ struct MainView: View {
             } primaryAction: {
                 model.chooseFiles()
             }
-            .help("Thêm tệp (⌘O). Giữ để chọn thư mục (⇧⌘O)")
+            .help("Thêm tệp (⌘O). Bấm mũi tên để chọn thư mục (⇧⌘O)")
             .disabled(model.store.isRunning)
         }
+        // Giữa: trạng thái và tiến độ (luôn ở trên cùng cửa sổ, không nằm ở đáy).
+        ToolbarItem(placement: .principal) {
+            ActivityPill(model: model)
+        }
+        // Phải: nơi lưu, nút chính theo ngữ cảnh, bảng tuỳ chọn.
         ToolbarItemGroup(placement: .primaryAction) {
-            Button("Xoá mục đã chọn", systemImage: "minus.circle") { model.removeSelected() }
-                .help("Xoá các tệp đã chọn khỏi danh sách (⌫)")
-                .disabled(model.selection.isEmpty || model.store.isRunning)
-            Button("Xoá danh sách", systemImage: "xmark.bin") { model.clearList() }
-                .help("Xoá toàn bộ danh sách (⇧⌘⌫)")
-                .disabled(!model.canEditList)
-            Button("Tuỳ chọn", systemImage: "sidebar.right") { model.showInspector.toggle() }
+            DestinationMenu(model: model)
+            if !model.store.isRunning, model.startCount.count > 0, !model.allOutputs.isEmpty {
+                Button("Xem kết quả", systemImage: "folder") { model.revealAllOutputs() }
+                    .help("Hiện tất cả tệp kết quả trong Finder (⇧⌘R)")
+            }
+            PrimaryActionButton(model: model)
+            Button("Tuỳ chọn", systemImage: "sidebar.trailing") { model.showInspector.toggle() }
                 .help("Ẩn/hiện bảng tuỳ chọn (⌥⌘I)")
         }
+    }
+}
+
+/// Thanh trên danh sách: lọc theo trạng thái và dọn danh sách.
+struct ListHeader: View {
+    @Bindable var model: AppModel
+
+    var body: some View {
+        let s = model.store.summary
+        HStack(spacing: 10) {
+            Picker("Lọc", selection: $model.filter) {
+                ForEach(ListFilter.allCases) { f in
+                    Text("\(f.title) \(f.count(in: s))").monospacedDigit().tag(f)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            .help("Lọc danh sách theo trạng thái. \"Lỗi\" gồm cả tệp bị huỷ hoặc bỏ qua.")
+
+            Spacer(minLength: 8)
+
+            if let book = model.store.register {
+                RegisterChip(result: book) { model.openRegister() }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
+
+            Menu {
+                Button("Xoá mục đã hoàn tất", systemImage: "checkmark.circle") {
+                    model.removeFinished { $0 == .done }
+                }
+                .disabled(s.done == 0)
+                Button("Xoá mục bị bỏ qua", systemImage: "forward") {
+                    model.removeFinished { if case .skipped = $0 { true } else { false } }
+                }
+                .disabled(s.skipped == 0)
+                Divider()
+                Button("Xoá mục đã chọn", systemImage: "minus.circle") { model.removeSelected() }
+                    .disabled(model.selection.isEmpty)
+                Button("Xoá cả danh sách", systemImage: "trash", role: .destructive) { model.clearList() }
+            } label: {
+                Label("Dọn danh sách", systemImage: "line.3.horizontal.decrease.circle")
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(!model.canEditList)
+            .help("Xoá bớt mục khỏi danh sách (tệp trên ổ đĩa không bị ảnh hưởng)")
+        }
+        .controlSize(.small)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
     }
 }

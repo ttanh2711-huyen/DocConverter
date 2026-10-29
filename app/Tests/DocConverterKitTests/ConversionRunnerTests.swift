@@ -46,7 +46,7 @@ func waitUntil(_ condition: @MainActor () -> Bool, timeout: Double = 10) async {
     try runner.start(arguments: ["--to", "md"], manifest: Data("[{\"src\":\"/x.pdf\"}]".utf8),
                      onEvent: { c.events.append($0) }, onExit: { c.exit = ($0, $1) })
     await waitUntil { c.exit != nil }
-    #expect(c.events.map(\.kind) == [.start, .progress, .progress, .progress, .done, .start, .error, .finished])
+    #expect(c.events.map(\.kind) == [.start, .progress, .progress, .progress, .done, .start, .error, .register, .finished])
     #expect(c.exit?.0 == 2)
     #expect(c.exit?.1.contains("log thư viện") == true)
     let received = try String(contentsOf: log, encoding: .utf8)

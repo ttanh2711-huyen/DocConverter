@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import TextIO
 
 from docconv.events import Emitter
+from docconv.metadata import DocMeta, extract
 from docconv.ocr import OcrSettings
 from docconv.paths import dest_dir, unique
 from docconv.router import SUPPORTED_EXTS, UnsupportedFormat, kind_of
@@ -62,6 +63,7 @@ class Converter:
 
     def __init__(self, formats: list[str], overwrite: bool, emit: Emitter, ocr=None):
         self.formats, self.overwrite, self.emit, self.ocr = formats, overwrite, emit, ocr
+        self.text = ""  # nội dung chữ của tệp vừa chuyển, để trích thông tin văn bản
 
     def _final(self, dest: Path, stem: str, ext: str) -> Path:
         path = dest / f"{stem}{ext}"
@@ -71,6 +73,7 @@ class Converter:
         kind = kind_of(src)
         dest.mkdir(parents=True, exist_ok=True)
         tmp = Path(tempfile.mkdtemp(prefix=".docconv-tmp-", dir=dest))
+        self.text = ""
         try:
             produced = self._pdf(src, dest, tmp) if kind == "pdf" else self._other(src, dest, tmp)
             return [self._move(p, dest) for p in produced]
@@ -98,6 +101,7 @@ class Converter:
                       + ("" if is_text else ", nhận dạng chữ (OCR)"))
             result = pdf_docling.analyze(src, force_ocr=not is_text, settings=self.ocr or OcrSettings())
         produced: list[Path] = []
+        self.text = _safe_text(lambda: result.document.export_to_markdown() if result else _pdf_text(src))
         if "md" in self.formats:
             self.emit("progress", file=str(src), stage="markdown", message="Đang ghi Markdown")
             md = tmp / self._final(dest, src.stem, ".md").name
@@ -118,7 +122,24 @@ class Converter:
             self.emit("warning", file=str(src),
                       message=f"Định dạng Word (.docx) chỉ áp dụng cho PDF — bỏ qua cho {src.name}")
         self.emit("progress", file=str(src), stage="markdown", message="Đang ghi Markdown")
-        return [markitdown_conv.to_markdown(src, tmp / self._final(dest, src.stem, ".md").name)]
+        md = markitdown_conv.to_markdown(src, tmp / self._final(dest, src.stem, ".md").name)
+        self.text = _safe_text(lambda: md.read_text(encoding="utf-8"))
+        return [md]
+
+
+def _safe_text(read) -> str:
+    try:
+        return read()
+    except Exception:  # chỉ phục vụ trích thông tin; không làm hỏng tệp kết quả
+        logging.exception("Không đọc được nội dung chữ")
+        return ""
+
+
+def _pdf_text(src: Path) -> str:
+    """Lớp chữ của PDF (khi chỉ xuất Word nên không có Markdown từ Docling)."""
+    from docconv.pdf_kind import layout_text
+
+    return layout_text(src)
 
 
 def _user_message(e: Exception, src: Path) -> str:
@@ -129,6 +150,26 @@ def _user_message(e: Exception, src: Path) -> str:
     if isinstance(e, FileNotFoundError):
         return f"Không tìm thấy tệp: {src}"
     return f"Chuyển đổi thất bại: {src.name} ({e})"
+
+
+def _meta(text: str) -> DocMeta:
+    try:
+        return extract(text) if text else DocMeta()
+    except Exception:  # trích thông tin là phần phụ, không làm hỏng kết quả chuyển đổi
+        logging.exception("Không trích được thông tin văn bản")
+        return DocMeta()
+
+
+def _write_register(path: Path, entries: list, emit: Emitter) -> None:
+    """Ghi sổ một lần ở cuối lô (cả khi bị huỷ, với các tệp đã xong)."""
+    from docconv import register
+
+    try:
+        result = register.write(path, [register.Entry(src, meta) for src, meta in entries])
+    except Exception as e:
+        emit("register", path=str(path), error=f"Không ghi được sổ tổng hợp {path.name}: {e}")
+        return
+    emit("register", path=str(path), added=result.added, updated=result.updated, total=result.total)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -148,6 +189,8 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--ocr-engine", choices=["ocrmac", "easyocr"], default="ocrmac")
     c.add_argument("--ocr-lang", default="vi,en", help="Ngôn ngữ OCR, ví dụ vi,en")
     c.add_argument("--no-tables", action="store_true", help="Tắt nhận dạng cấu trúc bảng (nhanh hơn)")
+    c.add_argument("--register", type=Path,
+                   help="Ghi loại, số ký hiệu, ngày ban hành, cơ quan, người ký… vào sổ Excel này (cộng dồn)")
     return ap
 
 
@@ -182,6 +225,7 @@ def main(argv: list[str] | None = None, out: TextIO | None = None, err: TextIO |
                       langs=tuple(x.strip() for x in args.ocr_lang.split(",") if x.strip()), tables=not args.no_tables)
     converter = Converter(formats, args.overwrite, emit, ocr)
     jobs = [i for i in items if isinstance(i, Job)]
+    entries: list = []
     ok = failed = skipped = 0
     cancelled = False
     try:
@@ -211,14 +255,19 @@ def main(argv: list[str] | None = None, out: TextIO | None = None, err: TextIO |
                 emit("error", file=str(src), message=_user_message(e, src), detail=f"{type(e).__name__}: {e}")
                 continue
             ok += 1
+            meta = _meta(converter.text)
+            if meta.is_document:
+                entries.append((src, meta))
             emit("done", file=str(src), outputs=[str(p) for p in outputs],
-                 seconds=round(time.perf_counter() - started, 1))
+                 seconds=round(time.perf_counter() - started, 1), **({"meta": meta.to_dict()} if meta.to_dict() else {}))
     except Cancelled:
         cancelled = True
         emit("cancelled")
     finally:
         for s, h in previous.items():
             signal.signal(s, h)
+    if args.register:
+        _write_register(args.register.expanduser().absolute(), entries, emit)
     emit("finished", ok=ok, failed=failed, skipped=skipped, cancelled=cancelled)
     if cancelled:
         return 130

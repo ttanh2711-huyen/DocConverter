@@ -16,46 +16,77 @@
 ## Giao diện
 
 ```
-┌ Thanh công cụ ───────────────────────────────────────────────────────────┐
-│ [+ Thêm ▾]  DocConverter                       [⊖ Xoá mục] [⌫ Xoá hết] [▣] │
-├───────────────────────────────────────────────┬──────────────────────────┤
-│ Danh sách tệp                                 │ Tuỳ chọn                 │
-│  icon  Tên tệp                    🔍  [Hoàn tất] │  Đầu ra cho PDF          │
-│        thư mục / bước đang làm / kết quả         │  Nơi lưu                 │
-│  …                                              │  Xử lý tệp               │
-│ (danh sách trống: vùng kéo thả lớn)             │  Nhận dạng chữ           │
-├───────────────────────────────────────────────┤                          │
-│ 8 tệp ● 7 hoàn tất ● 1 bỏ qua   ↳ Lưu…   [▶ Bắt đầu] │                    │
-└───────────────────────────────────────────────┴──────────────────────────┘
+┌ Thanh công cụ ───────────────────────────────────────────────────────────────────────┐
+│ [+ Thêm ▾]     ( ✓ 6 hoàn tất · 1 lỗi · 3 vào sổ  ━━━━━ )   [↳ ▾] [📁] [▶ Chuyển đổi] [▣] │
+├─────────────────────────────────────────────────────┬────────────────────────────────┤
+│ [Tất cả 8|Đang chờ 0|Hoàn tất 6|Lỗi 2] (✔ 3 vào sổ ↗) Dọn ▾ │ ■ Kết quả   PDF [MD|Word|Cả hai] │
+├─────────────────────────────────────────────────────┤             Lưu [Cạnh tệp gốc|Khác] │
+│ icon text_vi.pdf                   ╱VÀO SỔ╱ [✓ Hoàn tất] │ ■ Sổ tổng hợp (Excel)          │
+│      [Quyết định] 1234/QĐ-UBND · 15/03/2026 · Ng.V.Bình │ ■ Tệp gốc                      │
+│ icon ke_hoach.pptx      → MD           [◷ Đang chờ]   │ ■ Nhận dạng chữ (PDF scan)     │
+│ (danh sách trống: thả tệp → chuyển đổi → vào sổ)     │                                │
+└─────────────────────────────────────────────────────┴────────────────────────────────┘
 ```
+
+- **Sổ tổng hợp (Excel)**: mỗi văn bản hành chính chuyển xong được ghi một dòng vào sổ (xem mục *Sổ tổng hợp văn bản*). Dòng của văn bản trong danh sách hiện luôn loại, số ký hiệu, ngày ban hành và người ký; rê chuột để xem đủ cơ quan ban hành, chức vụ, trích yếu.
+- **Thanh lọc** trên danh sách: xem riêng tệp đang chờ, hoàn tất hoặc lỗi (⌘1–⌘4) thay vì cuộn tìm.
+- **Dọn danh sách**: xoá mục đã hoàn tất, mục bị bỏ qua, mục đã chọn hoặc cả danh sách.
+- **Rê chuột lên một dòng** hiện nút ↗ mở kết quả, 📁 hiện trong Finder, ⓧ xoá khỏi danh sách. Tệp đang chờ có nhãn định dạng sẽ tạo (→ MD, DOCX) theo tuỳ chọn hiện tại.
+- **Ô trạng thái giữa thanh công cụ** cho biết việc tiếp theo, tiến độ (thanh tiến độ và tên tệp đang chạy) và kết quả cuối (hoàn tất · lỗi · vào sổ). Khi đang chạy, danh sách tự cuộn tới tệp đang xử lý; dòng của tệp đó hiện biểu tượng bước đang làm (phân tích, ghi Markdown, tạo Word).
+- **Bên phải thanh công cụ**: đổi nơi lưu ngay tại chỗ (không cần mở bảng tuỳ chọn); nút chính đổi theo ngữ cảnh: **Chuyển đổi n tệp** → **Huỷ** → **Thử lại n tệp** (khi chỉ còn tệp lỗi) → **Xem kết quả** (khi đã xong hết).
+- **Con dấu "VÀO SỔ"** (màu mực tím) được đóng lên mỗi văn bản vừa ghi vào sổ tổng hợp; màu tím chỉ dùng cho sổ. Khi bật *Giảm chuyển động* trong Cài đặt hệ thống, con dấu chỉ hiện dần, không phóng to/xoay.
 
 | Phím tắt | Thao tác |
 |---|---|
 | ⌘O / ⇧⌘O | Thêm tệp / thêm thư mục |
-| ⌘R hoặc ↩ | Bắt đầu |
+| ⌘R hoặc ↩ | Bắt đầu chuyển đổi |
 | ⌘. hoặc Esc | Huỷ |
+| ⇧⌘R | Hiện tất cả kết quả trong Finder |
+| ⇧⌘E | Mở sổ tổng hợp (Excel) |
+| ⌘1 / ⌘2 / ⌘3 / ⌘4 | Lọc: Tất cả / Đang chờ / Hoàn tất / Lỗi |
 | ⌫ / ⇧⌘⌫ | Xoá mục đã chọn / xoá cả danh sách |
 | ⌥⌘I | Ẩn/hiện bảng tuỳ chọn |
-| Bấm đúp một dòng | Hiện kết quả trong Finder |
+| Bấm đúp một dòng | Mở tệp kết quả (chưa có kết quả: mở tệp gốc) |
 
 ## Sử dụng
 
 1. Thêm tài liệu bằng một trong các cách:
    - nút **+ Thêm** trên thanh công cụ (bấm: chọn tệp; mũi tên ▾: chọn thư mục), hoặc các nút ở giữa màn hình khi danh sách trống;
-   - thư mục: bật **Bao gồm thư mục con** (bảng Tuỳ chọn → Xử lý tệp) để lấy cả thư mục con;
+   - thư mục: bật **Bao gồm thư mục con** (bảng Tuỳ chọn → Tệp gốc) để lấy cả thư mục con;
    - kéo thả tệp/thư mục vào cửa sổ hoặc lên biểu tượng app.
    Tệp ẩn bị bỏ qua. Định dạng không hỗ trợ (ví dụ `.doc`, `.ppt` đời cũ) hiện là **Bỏ qua**.
-2. Trong bảng **Tuỳ chọn** bên phải, chọn **Đầu ra cho PDF**: Markdown, Word hoặc Cả hai. Các tệp khác luôn được chuyển sang Markdown.
+2. Trong bảng **Tuỳ chọn** bên phải, chọn **Chuyển PDF thành**: Markdown, Word hoặc Cả hai. Các tệp khác luôn được chuyển sang Markdown.
 3. Chọn **Nơi lưu**:
    - **Cạnh tệp gốc**: kết quả nằm cùng thư mục với tệp gốc.
    - **Thư mục khác**: kết quả nằm trong thư mục bạn chọn và **giữ nguyên cấu trúc thư mục con** của thư mục đầu vào.
-4. Bấm **Bắt đầu** ở góc dưới bên phải. Mỗi tệp có nhãn trạng thái riêng, thanh dưới cùng hiện tiến độ tổng. Bấm 🔍 (hoặc bấm đúp dòng) để hiện kết quả trong Finder, ⓘ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
+4. Bấm **Chuyển đổi** ở góc trên bên phải (hoặc ↩). Mỗi tệp có nhãn trạng thái riêng, ô trạng thái giữa thanh công cụ hiện tiến độ tổng. Bấm đúp một dòng để mở kết quả, bấm **Xem kết quả** để hiện tất cả trong Finder, bấm biểu tượng ❗ đỏ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
 
 Tên kết quả không bao giờ ghi đè tệp có sẵn: nếu `a.md` đã tồn tại, app tạo `a (1).md`. Ảnh trong tệp Markdown nằm trong thư mục `<tên>_assets/` bên cạnh.
 
+### Sổ tổng hợp văn bản
+
+Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổng hợp, mặc định **bật**) để mỗi lần chuyển đổi, app tự nhận các thông tin theo thể thức văn bản hành chính (Nghị định 30/2020/NĐ-CP) và ghi vào một tệp Excel chung, mặc định `~/Documents/Tổng hợp văn bản.xlsx`:
+
+| Cột | Ví dụ |
+|---|---|
+| Loại văn bản | Quyết định (lấy từ tên loại; không có thì suy từ ký hiệu, ví dụ `QĐ`, `KH`; ký hiệu dạng `45/UBND-KT` là Công văn) |
+| Số, ký hiệu | 1234/QĐ-UBND |
+| Ngày ban hành | 15/03/2026 (kiểu ngày của Excel, lọc và sắp xếp được) |
+| Cơ quan ban hành | ỦY BAN NHÂN DÂN TỈNH CÀ MAU |
+| Trích yếu nội dung | Về việc phê duyệt Kế hoạch sử dụng đất năm 2026… |
+| Người ký, Chức vụ người ký | Nguyễn Văn Bình — KT. CHỦ TỊCH, PHÓ CHỦ TỊCH |
+| Tên tệp (bấm để mở), Đường dẫn tệp gốc, Ngày ghi nhận | |
+| Cần kiểm tra | "Thiếu người ký"… — dòng được tô vàng khi app không nhận ra đủ 5 trường chính |
+
+- Sổ được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
+- Chỉ ghi văn bản hành chính; bảng tính, CSV, ảnh… không có số ký hiệu/ngày ban hành thì không ghi.
+- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, đầu danh sách hiện "n văn bản vào sổ" — bấm để mở.
+- Nếu không ghi được (ví dụ sổ đang mở và bị khoá), app báo lỗi; tệp kết quả vẫn được tạo bình thường. Đóng sổ rồi chạy lại để ghi.
+- Thông tin được nhận bằng quy tắc nên có thể sai với văn bản trình bày khác thể thức hoặc bản scan mờ: hãy xem cột **Cần kiểm tra** và rà lại trước khi dùng.
+
 ### Xoá tệp gốc
 
-Tuỳ chọn **Đưa tệp gốc vào Thùng rác** (bảng Tuỳ chọn → Xử lý tệp) mặc định **tắt**. Khi bật (app hỏi xác nhận ở lần đầu), tệp gốc chỉ được chuyển vào **Thùng rác** (khôi phục được) khi tất cả các điều kiện sau đều đúng:
+Tuỳ chọn **Đưa tệp gốc vào Thùng rác** (bảng Tuỳ chọn → Tệp gốc) mặc định **tắt**. Khi bật (app hỏi xác nhận ở lần đầu), tệp gốc chỉ được chuyển vào **Thùng rác** (khôi phục được) khi tất cả các điều kiện sau đều đúng:
 
 - tệp đó chuyển **thành công**;
 - **mọi** định dạng đã yêu cầu đều đã được tạo và không rỗng (ví dụ chọn "Cả hai" thì phải có cả `.md` lẫn `.docx`);
