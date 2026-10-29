@@ -80,6 +80,13 @@ struct AppCommands: Commands {
             Button("Mở sổ tổng hợp (Excel)") { model.openRegister() }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             Divider()
+            Button("Lưu cạnh tệp gốc") {
+                UserDefaults.standard.set(false, forKey: ConversionOptions.Keys.useOutputFolder)
+            }
+            .disabled(model.store.isRunning)
+            Button("Chọn thư mục lưu kết quả…") { model.chooseOutputFolder() }
+                .disabled(model.store.isRunning)
+            Divider()
             Button("Xoá mục đã chọn") { model.removeSelected() }
                 .keyboardShortcut(.delete, modifiers: [])
                 .disabled(model.selection.isEmpty || model.store.isRunning)

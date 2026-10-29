@@ -22,6 +22,10 @@ public struct JobItem: Identifiable, Equatable, Sendable {
     public var sourceTrashed = false
     /// Thông tin văn bản (loại, số ký hiệu, ngày, cơ quan, người ký…) khi lõi nhận ra.
     public var meta: DocumentMeta?
+    /// Bước đang làm (`analyze`, `markdown`, `docx`) khi đang chạy.
+    public var stage: String?
+    /// Đã được ghi vào sổ tổng hợp ở lần chạy gần nhất.
+    public var registered = false
 
     public init(url: URL, base: URL) {
         self.url = url
@@ -124,6 +128,7 @@ public final class JobStore {
     public func markStarted() {
         isRunning = true
         register = nil
+        for i in items.indices { items[i].registered = false }
         for i in items.indices {
             switch items[i].status {
             case .failed, .cancelled: items[i].status = .pending  // chạy lại các tệp lỗi/huỷ
@@ -136,9 +141,9 @@ public final class JobStore {
         let id = event.file.map { URL(fileURLWithPath: $0).standardizedFileURL.path }
         switch event.kind {
         case .start:
-            if let id { update(id) { $0.status = .running("Đang chuẩn bị…"); $0.detail = nil } }
+            if let id { update(id) { $0.status = .running("Đang chuẩn bị…"); $0.detail = nil; $0.stage = nil } }
         case .progress:
-            if let id { update(id) { $0.status = .running(event.message ?? "Đang xử lý…") } }
+            if let id { update(id) { $0.status = .running(event.message ?? "Đang xử lý…"); $0.stage = event.stage } }
         case .warning:
             if let id { update(id) { $0.note = event.message } }
         case .done:
@@ -147,6 +152,7 @@ public final class JobStore {
                     $0.status = .done
                     $0.outputs = (event.outputs ?? []).map { URL(fileURLWithPath: $0) }
                     $0.meta = event.meta
+                    $0.stage = nil
                 }
                 if let item = items.first(where: { $0.id == id }) { onJobDone?(item) }
             }
@@ -158,6 +164,11 @@ public final class JobStore {
             if let path = event.path {
                 register = RegisterResult(url: URL(fileURLWithPath: path), added: event.added ?? 0,
                                           updated: event.updated ?? 0, total: event.total ?? 0, error: event.error)
+                if event.error == nil {
+                    for i in items.indices where items[i].status == .done && items[i].meta?.isDocument == true {
+                        items[i].registered = true
+                    }
+                }
             }
         case .cancelled, .finished:
             if event.kind == .cancelled || event.cancelled == true {

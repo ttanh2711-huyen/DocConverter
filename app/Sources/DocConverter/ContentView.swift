@@ -69,23 +69,15 @@ struct MainView: View {
                 return true
             } isTargeted: { dropTargeted = $0 }
 
-            Divider()
-            ActionBar(model: model)
         }
-        .navigationTitle("DocConverter")
-        .navigationSubtitle(subtitle)
+        .navigationTitle(model.store.items.isEmpty ? "DocConverter" : "\(model.store.items.count) tệp")
+        .toolbar(removing: .title)
         .toolbar { toolbar }
         .inspector(isPresented: $model.showInspector) {
             OptionsInspector(model: model)
                 .disabled(model.store.isRunning)
                 .inspectorColumnWidth(min: 280, ideal: 300, max: 360)
         }
-    }
-
-    private var subtitle: String {
-        let s = model.store.summary
-        guard s.total > 0 else { return "" }
-        return model.store.isRunning ? "Đang chuyển đổi…" : "\(s.total) tệp"
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
@@ -101,7 +93,18 @@ struct MainView: View {
             .help("Thêm tệp (⌘O). Bấm mũi tên để chọn thư mục (⇧⌘O)")
             .disabled(model.store.isRunning)
         }
-        ToolbarItem(placement: .primaryAction) {
+        // Giữa: trạng thái và tiến độ (luôn ở trên cùng cửa sổ, không nằm ở đáy).
+        ToolbarItem(placement: .principal) {
+            ActivityPill(model: model)
+        }
+        // Phải: nơi lưu, nút chính theo ngữ cảnh, bảng tuỳ chọn.
+        ToolbarItemGroup(placement: .primaryAction) {
+            DestinationMenu(model: model)
+            if !model.store.isRunning, model.startCount.count > 0, !model.allOutputs.isEmpty {
+                Button("Xem kết quả", systemImage: "folder") { model.revealAllOutputs() }
+                    .help("Hiện tất cả tệp kết quả trong Finder (⇧⌘R)")
+            }
+            PrimaryActionButton(model: model)
             Button("Tuỳ chọn", systemImage: "sidebar.trailing") { model.showInspector.toggle() }
                 .help("Ẩn/hiện bảng tuỳ chọn (⌥⌘I)")
         }
@@ -126,6 +129,11 @@ struct ListHeader: View {
             .help("Lọc danh sách theo trạng thái. \"Lỗi\" gồm cả tệp bị huỷ hoặc bỏ qua.")
 
             Spacer(minLength: 8)
+
+            if let book = model.store.register {
+                RegisterChip(result: book) { model.openRegister() }
+                    .transition(.scale(scale: 0.8).combined(with: .opacity))
+            }
 
             Menu {
                 Button("Xoá mục đã hoàn tất", systemImage: "checkmark.circle") {

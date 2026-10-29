@@ -51,7 +51,7 @@ struct OptionsInspector: View {
                     }
                 }
             } header: {
-                SectionHeader("Kết quả", systemImage: "doc.richtext")
+                SectionHeader("Kết quả", systemImage: "doc.richtext.fill", color: .blue)
             } footer: {
                 Footnote("Tệp Office, HTML, CSV… luôn ra Markdown.")
             }
@@ -60,7 +60,7 @@ struct OptionsInspector: View {
                 Toggle("Ghi thông tin văn bản vào sổ", isOn: $registerEnabled)
                 if registerEnabled {
                     FileRow(icon: "tablecells.fill", name: registerURL.deletingPathExtension().lastPathComponent,
-                            help: registerURL.path, tint: .green) {
+                            help: registerURL.path, tint: Theme.seal) {
                         Button("Mở") { model.openRegister() }
                             .help("Mở sổ trong Excel/Numbers (⇧⌘E)")
                         Menu("Đổi") {
@@ -76,7 +76,7 @@ struct OptionsInspector: View {
                     }
                 }
             } header: {
-                SectionHeader("Sổ tổng hợp (Excel)", systemImage: "tablecells")
+                SectionHeader("Sổ tổng hợp (Excel)", systemImage: "checkmark.seal.fill", color: Theme.seal)
             } footer: {
                 Footnote("Loại, số ký hiệu, ngày ban hành, cơ quan, người ký, trích yếu; cộng dồn mỗi lần chuyển.")
             }
@@ -91,7 +91,7 @@ struct OptionsInspector: View {
                     }))
                     .help("Chỉ khi mọi kết quả đã tạo xong. Tệp lỗi hoặc bị huỷ luôn được giữ nguyên.")
             } header: {
-                SectionHeader("Tệp gốc", systemImage: "folder.badge.gearshape")
+                SectionHeader("Tệp gốc", systemImage: "folder.fill", color: .brown)
             }
 
             Section {
@@ -105,7 +105,7 @@ struct OptionsInspector: View {
                 .help("Tự động: chỉ nhận dạng trang không có chữ (bản scan). "
                       + "Luôn: dùng khi PDF có lớp chữ bị lỗi phông.")
             } header: {
-                SectionHeader("Nhận dạng chữ (PDF scan)", systemImage: "text.viewfinder")
+                SectionHeader("Nhận dạng chữ (PDF scan)", systemImage: "text.viewfinder", color: .teal)
             } footer: {
                 HStack(spacing: 4) {
                     Footnote("Tiếng Việt và tiếng Anh.")
@@ -171,16 +171,21 @@ private struct FileRow<Actions: View>: View {
 private struct SectionHeader: View {
     let title: String
     let systemImage: String
+    let color: Color
 
-    init(_ title: String, systemImage: String) {
+    init(_ title: String, systemImage: String, color: Color) {
         self.title = title
         self.systemImage = systemImage
+        self.color = color
     }
 
     var body: some View {
-        Label(title, systemImage: systemImage)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.primary)
+        HStack(spacing: 7) {
+            IconTile(systemImage: systemImage, color: color)
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+        }
     }
 }
 

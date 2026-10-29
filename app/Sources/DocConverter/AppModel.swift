@@ -14,6 +14,8 @@ final class AppModel {
     /// Bộ lọc danh sách (thanh trên danh sách và các số đếm ở thanh dưới).
     var filter = ListFilter.all
     var alert: String?
+    /// Lúc sổ tổng hợp vừa ghi xong: các con dấu "VÀO SỔ" chỉ chạy hiệu ứng ngay sau thời điểm này.
+    var registeredAt: Date?
     /// Chỉ dùng cho chế độ tự kiểm tra; bình thường đọc tuỳ chọn người dùng đã lưu.
     var optionsOverride: ConversionOptions?
     var trashOriginalsOverride: Bool?
@@ -148,6 +150,11 @@ final class AppModel {
         UserDefaults.standard.set(true, forKey: ConversionOptions.Keys.registerEnabled)
     }
 
+    /// Con dấu nên chạy hiệu ứng (vừa ghi sổ xong, chưa quá 2 giây).
+    var stampIsFresh: Bool {
+        registeredAt.map { Date.now.timeIntervalSince($0) < 2 } ?? false
+    }
+
     /// Số tệp sẽ chạy khi bấm Bắt đầu, và có phải tất cả đều là chạy lại (lỗi/huỷ) không.
     var startCount: (count: Int, isRetry: Bool) {
         let jobs = store.pendingJobs
@@ -189,6 +196,7 @@ final class AppModel {
                     // Cảnh báo "Word chỉ áp dụng cho PDF" lặp ở mọi tệp khác PDF; bảng tuỳ chọn đã ghi rõ điều này.
                     if event.kind == .warning, event.message?.contains("chỉ áp dụng cho PDF") == true { return }
                     store.apply(event)
+                    if event.kind == .register, event.error == nil { self?.registeredAt = .now }
                     if event.kind == .register, let error = event.error {
                         self?.alert = error + "\nTệp kết quả vẫn được tạo bình thường. Nếu sổ đang mở trong Excel, hãy đóng lại rồi chạy lại."
                     }

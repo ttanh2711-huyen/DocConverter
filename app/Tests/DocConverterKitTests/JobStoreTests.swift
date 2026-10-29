@@ -23,6 +23,22 @@ func ev(_ json: String) -> ConversionEvent {
     #expect(store.items[0].meta?.number == "12/QĐ-UBND")
     #expect(store.register?.url.lastPathComponent == "Tổng hợp văn bản.xlsx")
     #expect(store.register?.added == 1 && store.register?.error == nil)
+    #expect(store.items[0].registered && !store.items[1].registered)
+    #expect(store.items[0].stage == nil)
+}
+
+@Test @MainActor func progressKeepsStageAndRunResetsRegistered() {
+    let store = JobStore()
+    store.add(files: [URL(fileURLWithPath: "/a/1.pdf")])
+    store.apply(ev(#"{"event":"start","file":"/a/1.pdf","index":1,"total":1}"#))
+    store.apply(ev(#"{"event":"progress","file":"/a/1.pdf","stage":"docx","message":"Đang tạo Word"}"#))
+    #expect(store.items[0].stage == "docx")
+    store.apply(ev(#"{"event":"done","file":"/a/1.pdf","outputs":[],"meta":{"doc_type":"Thông báo","date":"2026-01-01"}}"#))
+    store.apply(ev(#"{"event":"register","path":"/a/so.xlsx","added":1,"updated":0,"total":1}"#))
+    store.apply(ev(#"{"event":"finished","ok":1,"failed":0,"skipped":0,"cancelled":false}"#))
+    #expect(store.items[0].registered)
+    store.markStarted()
+    #expect(!store.items[0].registered)
 }
 
 @Test @MainActor func registerErrorIsKeptAndClearedOnNextRun() {

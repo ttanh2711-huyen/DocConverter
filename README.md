@@ -16,26 +16,25 @@
 ## Giao diện
 
 ```
-┌ Thanh công cụ ─────────────────────────────────────────────────────────────┐
-│ [+ Thêm ▾]  DocConverter · 9 tệp                                      [▣] │
-├──────────────────────────────────────────────────┬─────────────────────────┤
-│ [Tất cả 9|Đang chờ 0|Hoàn tất 7|Lỗi 2]  Dọn ▾    │ Chuyển PDF thành        │
-├──────────────────────────────────────────────────┤  [Markdown|Word|Cả hai] │
-│ icon  Tên tệp            ↗ 📁 ⓧ  → MD  [✓ Hoàn tất] │ Nơi lưu kết quả         │
-│       thư mục / bước đang làm / kết quả / lỗi     │  [Cạnh tệp gốc|Thư mục] │
-│ …                                                 │ Tệp gốc                 │
-│ (danh sách trống: vùng kéo thả lớn)               │ Nhận dạng chữ (PDF scan)│
-├──────────────────────────────────────────────────┤  [Tự động|Luôn|Tắt]     │
-│ ● 7 hoàn tất ● 1 lỗi   📁 Lưu vào… ▾ [Xem kết quả] [▶ Chuyển đổi 3 tệp] │  │
-└──────────────────────────────────────────────────┴─────────────────────────┘
+┌ Thanh công cụ ───────────────────────────────────────────────────────────────────────┐
+│ [+ Thêm ▾]     ( ✓ 6 hoàn tất · 1 lỗi · 3 vào sổ  ━━━━━ )   [↳ ▾] [📁] [▶ Chuyển đổi] [▣] │
+├─────────────────────────────────────────────────────┬────────────────────────────────┤
+│ [Tất cả 8|Đang chờ 0|Hoàn tất 6|Lỗi 2] (✔ 3 vào sổ ↗) Dọn ▾ │ ■ Kết quả   PDF [MD|Word|Cả hai] │
+├─────────────────────────────────────────────────────┤             Lưu [Cạnh tệp gốc|Khác] │
+│ icon text_vi.pdf                   ╱VÀO SỔ╱ [✓ Hoàn tất] │ ■ Sổ tổng hợp (Excel)          │
+│      [Quyết định] 1234/QĐ-UBND · 15/03/2026 · Ng.V.Bình │ ■ Tệp gốc                      │
+│ icon ke_hoach.pptx      → MD           [◷ Đang chờ]   │ ■ Nhận dạng chữ (PDF scan)     │
+│ (danh sách trống: thả tệp → chuyển đổi → vào sổ)     │                                │
+└─────────────────────────────────────────────────────┴────────────────────────────────┘
 ```
 
 - **Sổ tổng hợp (Excel)**: mỗi văn bản hành chính chuyển xong được ghi một dòng vào sổ (xem mục *Sổ tổng hợp văn bản*). Dòng của văn bản trong danh sách hiện luôn loại, số ký hiệu, ngày ban hành và người ký; rê chuột để xem đủ cơ quan ban hành, chức vụ, trích yếu.
-- **Thanh lọc** trên danh sách: xem riêng tệp đang chờ, hoàn tất hoặc lỗi (⌘1–⌘4) thay vì cuộn tìm. Bấm số đếm ở thanh dưới cũng lọc nhanh.
+- **Thanh lọc** trên danh sách: xem riêng tệp đang chờ, hoàn tất hoặc lỗi (⌘1–⌘4) thay vì cuộn tìm.
 - **Dọn danh sách**: xoá mục đã hoàn tất, mục bị bỏ qua, mục đã chọn hoặc cả danh sách.
 - **Rê chuột lên một dòng** hiện nút ↗ mở kết quả, 📁 hiện trong Finder, ⓧ xoá khỏi danh sách. Tệp đang chờ có nhãn định dạng sẽ tạo (→ MD, DOCX) theo tuỳ chọn hiện tại.
-- **Khi đang chạy**, danh sách tự cuộn tới tệp đang xử lý; thanh dưới hiện tiến độ và tên tệp.
-- **Thanh dưới**: đổi nơi lưu ngay tại chỗ (không cần mở bảng tuỳ chọn); nút chính đổi theo ngữ cảnh: **Chuyển đổi n tệp** → **Huỷ** → **Thử lại n tệp** (khi chỉ còn tệp lỗi) → **Xem kết quả** (khi đã xong hết).
+- **Ô trạng thái giữa thanh công cụ** cho biết việc tiếp theo, tiến độ (thanh tiến độ và tên tệp đang chạy) và kết quả cuối (hoàn tất · lỗi · vào sổ). Khi đang chạy, danh sách tự cuộn tới tệp đang xử lý; dòng của tệp đó hiện biểu tượng bước đang làm (phân tích, ghi Markdown, tạo Word).
+- **Bên phải thanh công cụ**: đổi nơi lưu ngay tại chỗ (không cần mở bảng tuỳ chọn); nút chính đổi theo ngữ cảnh: **Chuyển đổi n tệp** → **Huỷ** → **Thử lại n tệp** (khi chỉ còn tệp lỗi) → **Xem kết quả** (khi đã xong hết).
+- **Con dấu "VÀO SỔ"** (màu mực tím) được đóng lên mỗi văn bản vừa ghi vào sổ tổng hợp; màu tím chỉ dùng cho sổ. Khi bật *Giảm chuyển động* trong Cài đặt hệ thống, con dấu chỉ hiện dần, không phóng to/xoay.
 
 | Phím tắt | Thao tác |
 |---|---|
@@ -60,7 +59,7 @@
 3. Chọn **Nơi lưu**:
    - **Cạnh tệp gốc**: kết quả nằm cùng thư mục với tệp gốc.
    - **Thư mục khác**: kết quả nằm trong thư mục bạn chọn và **giữ nguyên cấu trúc thư mục con** của thư mục đầu vào.
-4. Bấm **Chuyển đổi** ở góc dưới bên phải. Mỗi tệp có nhãn trạng thái riêng, thanh dưới cùng hiện tiến độ tổng. Bấm đúp một dòng để mở kết quả, bấm **Xem kết quả** để hiện tất cả trong Finder, bấm biểu tượng ❗ đỏ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
+4. Bấm **Chuyển đổi** ở góc trên bên phải (hoặc ↩). Mỗi tệp có nhãn trạng thái riêng, ô trạng thái giữa thanh công cụ hiện tiến độ tổng. Bấm đúp một dòng để mở kết quả, bấm **Xem kết quả** để hiện tất cả trong Finder, bấm biểu tượng ❗ đỏ để xem chi tiết lỗi; chuột phải để có thêm lệnh. **Huỷ** dừng ngay và không để lại tệp dở dang.
 
 Tên kết quả không bao giờ ghi đè tệp có sẵn: nếu `a.md` đã tồn tại, app tạo `a (1).md`. Ảnh trong tệp Markdown nằm trong thư mục `<tên>_assets/` bên cạnh.
 
@@ -81,7 +80,7 @@ Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổ
 
 - Sổ được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
 - Chỉ ghi văn bản hành chính; bảng tính, CSV, ảnh… không có số ký hiệu/ngày ban hành thì không ghi.
-- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, thanh dưới hiện "n văn bản vào sổ" — bấm để mở.
+- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, đầu danh sách hiện "n văn bản vào sổ" — bấm để mở.
 - Nếu không ghi được (ví dụ sổ đang mở và bị khoá), app báo lỗi; tệp kết quả vẫn được tạo bình thường. Đóng sổ rồi chạy lại để ghi.
 - Thông tin được nhận bằng quy tắc nên có thể sai với văn bản trình bày khác thể thức hoặc bản scan mờ: hãy xem cột **Cần kiểm tra** và rà lại trước khi dùng.
 

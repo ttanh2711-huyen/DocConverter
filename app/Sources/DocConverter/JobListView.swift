@@ -9,8 +9,9 @@ struct JobListView: View {
         let items = model.store.items.filter { model.filter.includes($0.status) }
         ScrollViewReader { proxy in
             List(selection: $model.selection) {
-                ForEach(items) { item in
-                    JobRow(item: item, canRemove: !model.store.isRunning) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    JobRow(item: item, canRemove: !model.store.isRunning,
+                           stampFresh: model.stampIsFresh, stampDelay: Double(min(index, 12)) * 0.05) {
                         model.store.remove(item.id)
                         model.selection.remove(item.id)
                     }
@@ -67,7 +68,10 @@ struct JobListView: View {
 struct JobRow: View {
     let item: JobItem
     let canRemove: Bool
+    var stampFresh = false
+    var stampDelay = 0.0
     let onRemove: () -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @AppStorage(ConversionOptions.Keys.pdfFormat) private var pdfFormat = ConversionOptions.PDFFormat.markdown.rawValue
     @State private var showDetail = false
     @State private var hovering = false
@@ -79,13 +83,12 @@ struct JobRow: View {
                 .frame(width: 26, height: 26)
                 .opacity(item.status == .pending || item.status == .done || item.isRunning ? 1 : 0.5)
 
-            VStack(alignment: .leading, spacing: 1) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.url.lastPathComponent)
                     .fontWeight(.medium)
                     .lineLimit(1).truncationMode(.middle)
-                Text(subtitle)
+                detailLine
                     .font(.caption)
-                    .foregroundStyle(subtitleStyle)
                     .lineLimit(1).truncationMode(.middle)
                     .help(tooltip)
             }
@@ -94,8 +97,9 @@ struct JobRow: View {
             actions
             if item.status == .pending, !targetFormats.isEmpty {
                 FormatChips(formats: targetFormats)
-            } else if item.status == .done, !createdFormats.isEmpty {
-                FormatChips(formats: createdFormats, arrow: false)
+            }
+            if item.registered {
+                SealStamp(animate: stampFresh, delay: stampDelay)
             }
             StatusBadge(status: item.status)
                 .frame(width: 96, alignment: .trailing)
@@ -108,7 +112,7 @@ struct JobRow: View {
     @ViewBuilder private var actions: some View {
         HStack(spacing: 2) {
             if item.detail != nil {
-                RowButton("Xem chi tiết lỗi", systemImage: "exclamationmark.bubble", tint: .red) { showDetail = true }
+                RowButton("Xem chi tiết lỗi", systemImage: "exclamationmark.bubble", tint: Theme.failed) { showDetail = true }
                     .popover(isPresented: $showDetail, arrowEdge: .bottom) { ErrorDetail(item: item) }
             }
             if hovering {
@@ -125,6 +129,46 @@ struct JobRow: View {
         }
     }
 
+    /// Dòng phụ: với văn bản hành chính là nhãn loại + số ký hiệu · ngày · người ký;
+    /// khi đang chạy là biểu tượng bước đang làm; còn lại là dòng chữ trạng thái.
+    @ViewBuilder private var detailLine: some View {
+        if item.status == .done, let m = item.meta, let type = m.docType {
+            HStack(spacing: 5) {
+                Text(type)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(.quaternary, in: .rect(cornerRadius: 4))
+                // Số ký hiệu và ngày luôn hiện đủ; tên người ký rút gọn trước khi thiếu chỗ.
+                Group {
+                    if let number = m.number { Text(number).fixedSize() }
+                    if let date = m.displayDate { Text("· " + date).fixedSize() }
+                    if let signer = m.signer { Text("· " + signer).truncationMode(.tail) }
+                }
+                .foregroundStyle(.secondary)
+                .monospacedDigit()
+            }
+        } else if item.isRunning {
+            HStack(spacing: 4) {
+                Image(systemName: stageSymbol)
+                    .foregroundStyle(Theme.running)
+                    .symbolEffect(.pulse, options: .repeating, isActive: !reduceMotion)
+                Text(subtitle).foregroundStyle(.secondary)
+            }
+        } else {
+            Text(subtitle).foregroundStyle(subtitleStyle)
+        }
+    }
+
+    private var stageSymbol: String {
+        switch item.stage {
+        case "analyze": "doc.text.magnifyingglass"
+        case "markdown": "text.alignleft"
+        case "docx": "doc.richtext"
+        default: "hourglass"
+        }
+    }
+
     /// Đuôi các tệp đã tạo (bỏ thư mục ảnh).
     private var createdFormats: [String] {
         item.revealTargets.map { $0.pathExtension.uppercased() }
@@ -133,9 +177,10 @@ struct JobRow: View {
     private var tooltip: String {
         if item.status == .pending { return (item.url.path as NSString).abbreviatingWithTildeInPath }
         guard let m = item.meta else { return subtitle }
+        let formats = createdFormats.isEmpty ? nil : createdFormats.joined(separator: ", ")
         let fields: [(String, String?)] = [
             ("Loại văn bản", m.docType), ("Số, ký hiệu", m.number), ("Ngày ban hành", m.displayDate),
-            ("Cơ quan ban hành", m.issuer), ("Người ký", m.signer), ("Chức vụ", m.position), ("Trích yếu", m.summary),
+            ("Cơ quan ban hành", m.issuer), ("Người ký", m.signer), ("Chức vụ", m.position), ("Trích yếu", m.summary), ("Đã tạo", formats),
         ]
         return fields.compactMap { label, value in value.map { "\(label): \($0)" } }.joined(separator: "\n")
     }
@@ -169,7 +214,7 @@ struct JobRow: View {
     }
 
     private var subtitleStyle: AnyShapeStyle {
-        if case .failed = item.status { return AnyShapeStyle(.red) }
+        if case .failed = item.status { return AnyShapeStyle(Theme.failed) }
         return AnyShapeStyle(.secondary)
     }
 
@@ -211,22 +256,19 @@ private struct RowButton: View {
 /// Nhãn định dạng đầu ra, ví dụ "→ MD DOCX".
 struct FormatChips: View {
     let formats: [String]
-    var arrow = true
 
     var body: some View {
         HStack(spacing: 3) {
-            if arrow {
-                Image(systemName: "arrow.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
-            }
+            Image(systemName: "arrow.right").font(.system(size: 8, weight: .bold)).foregroundStyle(.tertiary)
             ForEach(formats, id: \.self) { f in
                 Text(f)
-                    .font(.system(size: 9.5, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(Color.accentColor)
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Theme.running)
                     .padding(.horizontal, 5).padding(.vertical, 1.5)
-                    .background(Color.accentColor.opacity(0.12), in: .rect(cornerRadius: 4))
+                    .background(Theme.running.opacity(0.12), in: .rect(cornerRadius: 4))
             }
         }
-        .help(arrow ? "Định dạng sẽ tạo ra" : "Định dạng đã tạo")
+        .help("Định dạng sẽ tạo ra")
     }
 }
 
@@ -275,15 +317,7 @@ struct StatusBadge: View {
         }
     }
 
-    private var color: Color {
-        switch status {
-        case .pending, .skipped: .secondary
-        case .running: .blue
-        case .done: .green
-        case .failed: .red
-        case .cancelled: .orange
-        }
-    }
+    private var color: Color { Theme.color(for: status) }
 }
 
 private struct ErrorDetail: View {
@@ -292,7 +326,7 @@ private struct ErrorDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(item.url.lastPathComponent, systemImage: "exclamationmark.triangle.fill")
-                .font(.headline).foregroundStyle(.red)
+                .font(.headline).foregroundStyle(Theme.failed)
             ScrollView {
                 Text(item.detail ?? "")
                     .font(.system(.caption, design: .monospaced))

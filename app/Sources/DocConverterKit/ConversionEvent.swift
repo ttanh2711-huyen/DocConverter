@@ -70,6 +70,11 @@ public struct DocumentMeta: Decodable, Sendable, Equatable {
         self.summary = summary
     }
 
+    /// Đủ dấu hiệu là văn bản hành chính để lõi ghi vào sổ (cùng quy tắc với `DocMeta.is_document`).
+    public var isDocument: Bool {
+        number != nil || (docType != nil && (date != nil || signer != nil))
+    }
+
     /// "2026-03-15" → "15/03/2026".
     public var displayDate: String? {
         guard let date else { return nil }
