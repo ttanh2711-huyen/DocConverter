@@ -26,7 +26,10 @@ COLUMNS = [  # (tiêu đề, độ rộng)
     ("Đường dẫn tệp gốc", 50),
     ("Ngày ghi nhận", 16),
     ("Cần kiểm tra", 24),
+    ("Ký số", 46),
 ]
+BASE_COLUMNS = COLUMNS[:12]  # các cột có từ bản đầu; cột sau đó được tìm theo tiêu đề
+NOTE_COL = 12
 PATH_COL = 10  # cột khoá: đường dẫn tệp gốc
 REQUIRED = [("doc_type", "loại"), ("number", "số"), ("date", "ngày"), ("issuer", "cơ quan"), ("signer", "người ký")]
 
@@ -47,9 +50,24 @@ class Result:
 def _row(entry: Entry, recorded: datetime) -> list:
     m = entry.meta
     issued = date.fromisoformat(m.date) if m.date else None
-    missing = [label for field, label in REQUIRED if not getattr(m, field)]
+    # Phụ lục không có người ký riêng (chỉ cơ quan ký số kèm văn bản chính).
+    missing = [label for field, label in REQUIRED
+               if not getattr(m, field) and not (field == "signer" and m.doc_type == "Phụ lục")]
+    notes = [("Thiếu " + ", ".join(missing))] if missing else []
+    if m.date_source == "ký số":
+        notes.append("ngày lấy theo thời điểm ký số")
+    signed = "; ".join(f"{s['name']} ({_display_time(s.get('time', ''))})" if s.get("time") else s["name"]
+                       for s in m.signatures)
     return [None, m.doc_type, m.number, issued, m.issuer, m.summary, m.signer, m.position,
-            entry.src.name, str(entry.src), recorded, ("Thiếu " + ", ".join(missing)) if missing else ""]
+            entry.src.name, str(entry.src), recorded, "; ".join(notes), signed]
+
+
+def _display_time(iso: str) -> str:
+    """"2026-03-24T08:53:49+07:00" → "24/03/2026 08:53"."""
+    try:
+        return datetime.fromisoformat(iso).strftime("%d/%m/%Y %H:%M")
+    except ValueError:
+        return iso
 
 
 def write(path: Path, entries: list[Entry], now: datetime | None = None) -> Result:
@@ -87,6 +105,22 @@ def write(path: Path, entries: list[Entry], now: datetime | None = None) -> Resu
         ws.row_dimensions[1].height = 30
         ws.freeze_panes = "C2"
 
+    # Cột thêm sau này (sổ tạo bằng phiên bản cũ chưa có): tìm theo tiêu đề, chưa có thì đặt vào
+    # cột trống đầu tiên phía sau để không đè lên cột người dùng tự thêm.
+    extra_cols: dict[str, int] = {}
+    for title, width in COLUMNS[len(BASE_COLUMNS):]:
+        col = next((c for c in range(1, ws.max_column + 1) if ws.cell(1, c).value == title), None)
+        if col is None:
+            col = len(BASE_COLUMNS) + 1
+            while ws.cell(1, col).value is not None or any(
+                    ws.cell(r, col).value is not None for r in range(2, ws.max_row + 1)):
+                col += 1
+            cell = ws.cell(1, col, title)
+            cell.font, cell.fill, cell.border = header_font, header_fill, border
+            cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+            ws.column_dimensions[get_column_letter(col)].width = width
+        extra_cols[title] = col
+
     existing = {ws.cell(r, PATH_COL).value: r for r in range(2, ws.max_row + 1) if ws.cell(r, PATH_COL).value}
     next_row = ws.max_row + 1
     added = updated = 0
@@ -99,7 +133,8 @@ def write(path: Path, entries: list[Entry], now: datetime | None = None) -> Resu
             row, next_row = next_row, next_row + 1
             existing[str(entry.src)] = row
             added += 1
-        for c, value in enumerate(values[1:], 2):
+        columns = list(range(2, len(BASE_COLUMNS) + 1)) + [extra_cols[t] for t, _ in COLUMNS[len(BASE_COLUMNS):]]
+        for c, value in zip(columns, values[1:]):
             cell = ws.cell(row, c, value)
             cell.alignment, cell.border = wrap, border
         ws.cell(row, 4).number_format = "DD/MM/YYYY"
@@ -107,15 +142,15 @@ def write(path: Path, entries: list[Entry], now: datetime | None = None) -> Resu
         link = ws.cell(row, 9)
         link.hyperlink = Path(entry.src).as_uri()
         link.font = Font(color="0563C1", underline="single")
-        for c in range(1, len(COLUMNS) + 1):
-            ws.cell(row, c).fill = warn_fill if values[-1] else no_fill
+        for c in [1] + columns:
+            ws.cell(row, c).fill = warn_fill if values[NOTE_COL - 1] else no_fill
 
     last = max(ws.max_row, 1)
     for r in range(2, last + 1):  # đánh lại số thứ tự
         cell = ws.cell(r, 1, r - 1)
         cell.alignment = Alignment(horizontal="center", vertical="top")
         cell.border = border
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(COLUMNS))}{last}"
+    ws.auto_filter.ref = f"A1:{get_column_letter(max(len(COLUMNS), *extra_cols.values()))}{last}"
 
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp = tempfile.mkstemp(prefix=".~docconv-", suffix=".xlsx", dir=path.parent)

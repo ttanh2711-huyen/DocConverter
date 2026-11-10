@@ -15,6 +15,7 @@ docconv convert [INPUT ...] [--manifest FILE|-] [--recursive]
 - `--out-mode beside` (mặc định): ghi cạnh tệp gốc. `--out-mode dir --out DIR`: ghi vào `DIR/<đường dẫn tương đối của thư mục chứa tệp so với base>/`.
 - Không ghi đè: nếu tên đã tồn tại thì thêm hậu tố ` (1)`, ` (2)`…; `--overwrite` để ghi đè.
 - Ảnh của `.md` (từ PDF) nằm trong thư mục `<tên>_assets/` cạnh tệp `.md`.
+- PDF ký số (ví dụ ký bằng VGCA) thường để trống số và ngày trên trang; văn thư điền số, ngày, tháng bằng hình hiển thị của chữ ký số đặt vào chỗ trống. Lõi "dàn phẳng" chữ ký vào trang (chỉ trong bộ nhớ, không sửa tệp) rồi đọc chữ theo vị trí, nên đọc được các giá trị này. Người ký, cơ quan ban hành và (khi thiếu) ngày ban hành được bổ sung từ thông tin chữ ký số; tính hợp lệ của chữ ký **không** được kiểm tra.
 - `--register`: sau khi chạy xong (kể cả khi bị huỷ), ghi các văn bản hành chính đã chuyển thành công vào sổ Excel (trang tính "Sổ văn bản"): loại văn bản, số ký hiệu, ngày ban hành, cơ quan ban hành, trích yếu, người ký, chức vụ, tệp gốc. Sổ được cộng dồn qua các lần chạy; tệp gốc đã có trong sổ thì cập nhật dòng cũ. Tệp không nhận ra là văn bản hành chính (bảng tính, CSV…) không được ghi.
 - Mọi đầu ra được tạo trong thư mục tạm `.docconv-tmp-*` cùng thư mục đích, và chỉ được chuyển vào chỗ khi tệp đó **đã thành công toàn bộ**. Lỗi hoặc huỷ thì không để lại tệp dở dang.
 
@@ -27,7 +28,7 @@ Mỗi dòng stdout là **một đối tượng JSON** (UTF-8). Log của thư vi
 | `start` | `file`, `index` (từ 1), `total`, `kind` (`pdf`\|`markitdown`), `pages` (số trang PDF hoặc `null`) | Bắt đầu xử lý một tệp |
 | `progress` | `file`, `stage` (`analyze`\|`markdown`\|`docx`), `message` | Chuyển sang bước mới |
 | `warning` | `file`, `message` | Cảnh báo, vẫn tiếp tục |
-| `done` | `file`, `outputs` (danh sách đường dẫn tuyệt đối: `.md`, thư mục `_assets`, `.docx`), `seconds`, `meta` (không bắt buộc) | Tệp đã xong; mọi đầu ra đã nằm đúng chỗ. `meta`: các trường nhận ra được trong `doc_type`, `number`, `date` (yyyy-mm-dd), `issuer`, `signer`, `position`, `summary` |
+| `done` | `file`, `outputs` (danh sách đường dẫn tuyệt đối: `.md`, thư mục `_assets`, `.docx`), `seconds`, `meta` (không bắt buộc) | Tệp đã xong; mọi đầu ra đã nằm đúng chỗ. `meta`: các trường nhận ra được trong `doc_type`, `number`, `date` (yyyy-mm-dd), `issuer`, `signer`, `position`, `summary`; với PDF ký số thêm `signatures` (`[{"name", "time"}]`, mỗi người/cơ quan ký một lần, `time` ISO 8601) và `date_source: "ký số"` khi ngày ban hành lấy theo thời điểm cơ quan ký số |
 | `skipped` | `file`, `message` | Bỏ qua (đuôi không hỗ trợ khi quét thư mục) |
 | `error` | `file`, `message` (tiếng Việt, cho người dùng), `detail` (kỹ thuật) | Tệp lỗi; các tệp khác vẫn tiếp tục |
 | `cancelled` | | Nhận SIGTERM/SIGINT; đã dọn tệp dở dang |

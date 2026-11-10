@@ -53,14 +53,40 @@ public struct DocumentMeta: Decodable, Sendable, Equatable {
     public var signer: String?
     public var position: String?
     public var summary: String?
+    /// Chữ ký số trong tệp (mỗi người/cơ quan một lần), chưa kiểm tra tính hợp lệ.
+    public var signatures: [SignatureInfo]?
+    /// "ký số" khi ngày ban hành lấy theo thời điểm cơ quan ký số.
+    public var dateSource: String?
+
+    public struct SignatureInfo: Decodable, Sendable, Equatable {
+        public var name: String
+        public var time: String?
+
+        public init(name: String, time: String? = nil) {
+            self.name = name
+            self.time = time
+        }
+
+        /// "2026-03-24T08:53:49+07:00" → "24/03/2026 08:53".
+        public var displayTime: String? {
+            guard let time, time.count >= 16 else { return time }
+            let date = time.prefix(10).split(separator: "-")
+            guard date.count == 3 else { return time }
+            return "\(date[2])/\(date[1])/\(date[0]) \(time.dropFirst(11).prefix(5))"
+        }
+    }
 
     enum CodingKeys: String, CodingKey {
         case docType = "doc_type"
-        case number, date, issuer, signer, position, summary
+        case dateSource = "date_source"
+        case number, date, issuer, signer, position, summary, signatures
     }
 
     public init(docType: String? = nil, number: String? = nil, date: String? = nil, issuer: String? = nil,
-                signer: String? = nil, position: String? = nil, summary: String? = nil) {
+                signer: String? = nil, position: String? = nil, summary: String? = nil,
+                signatures: [SignatureInfo]? = nil, dateSource: String? = nil) {
+        self.signatures = signatures
+        self.dateSource = dateSource
         self.docType = docType
         self.number = number
         self.date = date

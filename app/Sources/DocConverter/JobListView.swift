@@ -147,6 +147,11 @@ struct JobRow: View {
                 }
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
+                if let signatures = m.signatures, !signatures.isEmpty {
+                    Image(systemName: "signature")
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Có \(signatures.count) chữ ký số")
+                }
             }
         } else if item.isRunning {
             HStack(spacing: 4) {
@@ -178,9 +183,13 @@ struct JobRow: View {
         if item.status == .pending { return (item.url.path as NSString).abbreviatingWithTildeInPath }
         guard let m = item.meta else { return subtitle }
         let formats = createdFormats.isEmpty ? nil : createdFormats.joined(separator: ", ")
+        let date = m.displayDate.map { m.dateSource == "ký số" ? "\($0) (theo thời điểm ký số)" : $0 }
+        let signed = m.signatures.map { list in
+            list.map { "\($0.name)" + ($0.displayTime.map { " (\($0))" } ?? "") }.joined(separator: "; ")
+        }
         let fields: [(String, String?)] = [
-            ("Loại văn bản", m.docType), ("Số, ký hiệu", m.number), ("Ngày ban hành", m.displayDate),
-            ("Cơ quan ban hành", m.issuer), ("Người ký", m.signer), ("Chức vụ", m.position), ("Trích yếu", m.summary), ("Đã tạo", formats),
+            ("Loại văn bản", m.docType), ("Số, ký hiệu", m.number), ("Ngày ban hành", date),
+            ("Cơ quan ban hành", m.issuer), ("Người ký", m.signer), ("Chức vụ", m.position), ("Trích yếu", m.summary), ("Ký số", signed), ("Đã tạo", formats),
         ]
         return fields.compactMap { label, value in value.map { "\(label): \($0)" } }.joined(separator: "\n")
     }

@@ -6,7 +6,7 @@ Chỉ dùng quy tắc (không cần mạng hay mô hình). Trường nào không
 
 import re
 import unicodedata
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import date
 
 # Tên loại văn bản (theo thứ tự ưu tiên khi so khớp: tên dài trước).
@@ -29,12 +29,20 @@ TYPE_CODES = {
     "L": "Luật",
 }
 
-# Đơn vị hành chính đứng ở dòng thứ hai của tên cơ quan ("ỦY BAN NHÂN DÂN" / "TỈNH CÀ MAU").
-_ADMIN_UNITS = ("TỈNH ", "THÀNH PHỐ ", "HUYỆN ", "QUẬN ", "THỊ XÃ ", "THỊ TRẤN ", "XÃ ", "PHƯỜNG ", "ĐẶC KHU ")
+# Từ mở đầu tên một cơ quan. Dòng không mở đầu bằng các từ này là phần nối của dòng trên
+# ("ỦY BAN NHÂN DÂN" / "TỈNH CÀ MAU"; "BAN CHỈ ĐẠO CÁC CHƯƠNG" / "TRÌNH MỤC TIÊU QUỐC GIA…").
+_AGENCY_HEADS = (
+    "ủy ban", "ubnd", "hđnd", "hội đồng", "sở ", "bộ ", "ban ", "bcđ", "phòng", "cục", "chi cục", "tổng cục",
+    "trung tâm", "văn phòng", "chính phủ", "quốc hội", "thủ tướng", "viện", "trường", "công ty", "đoàn", "đảng",
+    "thanh tra", "tòa án", "kho bạc", "bảo hiểm", "công an", "bộ chỉ huy", "liên đoàn", "hội ", "mặt trận",
+    "ngân hàng", "chủ tịch", "tổ ", "đài", "báo", "học viện", "bệnh viện", "ban quản lý",
+)
+_ORG_WORDS = ("ủy ban", "ubnd", "sở ", "bộ ", "ban ", "phòng ", "cục ", "văn phòng", "trung tâm", "chính phủ",
+              "hội đồng", "công ty", "trường ", "viện ", "kho bạc", "đảng ủy")
 _DELEGATION = re.compile(r"^(TM|KT|TL|TUQ|Q|T/M|K/T|T/L)\s*[./]")
 _SIGN_NOISE = re.compile(r"^[(\[]?\s*(đã ký|ký|ký tên|ký, ghi rõ họ tên|signature|chữ ký)[^)\]]*[)\]]?$", re.I)
 
-_NUMBER = re.compile(r"(?:^|\s)(?:Số|SỐ|số)\s*[:.]?\s*((?:\d+\s*)?(?:/\s*\d{4}\s*)?/\s*[A-ZĐ][A-ZĐa-zđ0-9.\-–]*)")
+_NUMBER = re.compile(r"(?:^|\s)(?:Số|SỐ|số)\s*[:.]?\s*((?:\d+\s*)?(?:/\s*\d{4}\s*)?/\s*[A-ZĐ][A-ZĐa-zđ0-9.&\-–]*)")
 _DATE_WORDS = re.compile(r"ngày\s+(\d{1,2})\s+tháng\s+(\d{1,2})\s+năm\s+(\d{4})", re.I)
 _DATE_SLASH = re.compile(r"ngày\s+(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*(\d{4})", re.I)
 
@@ -48,6 +56,8 @@ class DocMeta:
     signer: str = ""
     position: str = ""
     summary: str = ""
+    signatures: list = field(default_factory=list)  # [{"name", "time"}] theo chữ ký số trong tệp
+    date_source: str = ""  # "ký số" khi ngày ban hành lấy theo thời điểm ký số
 
     def to_dict(self) -> dict:
         return {k: v for k, v in asdict(self).items() if v}
@@ -166,6 +176,9 @@ def _type_from_line(line: str) -> str:
 
 
 def _find_type(lines: list[str], number: str) -> tuple[int, str]:
+    for i, line in enumerate(lines[:4]):
+        if canon(line).startswith("phụ lục"):
+            return i, "Phụ lục"
     for i, line in enumerate(lines[:60]):
         if t := _type_from_line(line):
             return i, t
@@ -197,10 +210,13 @@ def _find_issuer(lines: list[str], number_at: int, type_at: int) -> str:
             candidates.append(part)
     if not candidates:
         return ""
-    last = candidates[-1]
-    if len(candidates) >= 2 and last.startswith(_ADMIN_UNITS):
-        return f"{candidates[-2]} {last}"
-    return last
+    # Ghép ngược các dòng nối cho tới dòng mở đầu bằng tên một cơ quan.
+    name = candidates[-1]
+    for prev in reversed(candidates[:-1]):
+        if canon(name).startswith(_AGENCY_HEADS):
+            break
+        name = f"{prev} {name}"
+    return name
 
 
 def _is_name(words: list[str]) -> bool:
@@ -268,22 +284,48 @@ def _tidy_position(position: str) -> str:
     return last
 
 
-def _find_summary(lines: list[str], number_at: int, type_at: int) -> str:
-    for line in lines[:50]:
+def _continued(lines: list[str], start: int, first: str) -> str:
+    """Nối trích yếu sang các dòng sau (tối đa 4) khi dòng trước chưa kết thúc câu."""
+    text = first
+    for line in lines[start + 1:start + 5]:
+        c = canon(line)
+        if (text.rstrip().endswith((".", ";", ":")) or _is_upper(line) or _is_national_motto(line)
+                or c.startswith(("kính gửi", "căn cứ", "số:", "số ")) or re.search(r",\s*ngày\s", line)
+                or re.search(r"ngày\s+\d{1,2}\s+tháng", line)):
+            break
+        text = f"{text} {line}"
+    return text.strip()
+
+
+def _find_summary(lines: list[str], number_at: int, type_at: int, doc_type: str) -> str:
+    if doc_type == "Phụ lục" and type_at >= 0:
+        parts: list[str] = []
+        for line in lines[type_at + 1:type_at + 6]:
+            if canon(line).startswith(("(kèm", "kèm")) or (parts and parts[-1].startswith("(") and ")" not in parts[-1]):
+                parts.append(line)
+                if ")" in line:
+                    break
+            elif _is_upper(line) and not any(p.startswith("(") for p in parts):
+                parts.append(line)
+            elif parts:
+                break
+        return " ".join(parts)
+    for i, line in enumerate(lines[:50]):
         # "V/v …" có thể nằm chung ô với số ký hiệu: "Số: 45/UBND-KT V/v triển khai…"
         m = re.search(r"(?:^|\s)(?:V/v|v/v|V/V)\s*[:.]?\s*(.+)$", line)
         if m:
-            return m.group(1).strip()
+            return _continued(lines, i, m.group(1).strip())
         m = re.search(r"(?:^|\s)((?:Về việc|VỀ VIỆC)\s*[:.]?\s*.+)$", line)
         if m and (m.start() == 0 or _type_from_line(line)):
-            return m.group(1).strip()
+            return _continued(lines, i, m.group(1).strip())
     if type_at >= 0:
-        for line in lines[type_at + 1:type_at + 4]:
+        for i in range(type_at + 1, min(type_at + 4, len(lines))):
+            line = lines[i]
             c = canon(line)
             if c.startswith("căn cứ") or _type_from_line(line) or _is_national_motto(line):
                 break
             if len(line) >= 8 and not re.search(r"ngày\s+\d", line):
-                return line
+                return _continued(lines, i, line)
     return ""
 
 
@@ -298,8 +340,48 @@ def extract(text: str) -> DocMeta:
         doc_type=doc_type,
         number=number,
         date=_find_date(lines),
-        issuer=_find_issuer(lines, number_at, type_at),
+        # Phụ lục không có phần đầu riêng; cơ quan lấy theo chữ ký số (xem with_signatures).
+        issuer="" if doc_type == "Phụ lục" else _find_issuer(lines, number_at, type_at),
         signer=signer,
         position=position,
-        summary=_find_summary(lines, number_at, type_at)[:400],
+        summary=_find_summary(lines, number_at, type_at, doc_type)[:400],
     )
+
+
+def merge(primary: DocMeta, fallback: DocMeta) -> DocMeta:
+    """Lấy `primary`, điền các trường còn trống từ `fallback`; số ký hiệu thiếu phần số cũng được thay."""
+    out = DocMeta(**asdict(primary))
+    for name in ("doc_type", "date", "issuer", "signer", "position", "summary"):
+        if not getattr(out, name):
+            setattr(out, name, getattr(fallback, name))
+    if fallback.number and (not out.number or (out.number.startswith("/") and not fallback.number.startswith("/"))):
+        out.number = fallback.number
+    return out
+
+
+def is_organization(name: str) -> bool:
+    return _is_upper(name) or canon(name).startswith(_ORG_WORDS)
+
+
+def with_signatures(meta: DocMeta, signatures: list) -> DocMeta:
+    """Bổ sung từ chữ ký số (mỗi phần tử có `name`, `time` ISO): người ký là người ký số cuối cùng
+    (không phải cơ quan), cơ quan ban hành là cơ quan ký số, ngày ban hành là ngày cơ quan ký số."""
+    seen: dict[str, str] = {}
+    for sig in signatures:
+        seen.setdefault(sig.name, sig.time)
+    if not seen:
+        return meta
+    out = DocMeta(**asdict(meta))
+    out.signatures = [{"name": name, "time": time} for name, time in seen.items()]
+    people = [name for name in seen if not is_organization(name)]
+    orgs = [(time, name) for name, time in seen.items() if is_organization(name)]
+    if not out.signer and people:
+        out.signer = people[-1]
+    if not out.issuer and orgs:
+        out.issuer = min(orgs)[1]
+    if not out.date:
+        times = [t for t, _ in orgs] or [t for t in seen.values()]
+        first = min((t for t in times if t), default="")
+        if first:
+            out.date, out.date_source = first[:10], "ký số"
+    return out

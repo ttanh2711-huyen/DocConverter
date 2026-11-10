@@ -77,8 +77,11 @@ Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổ
 | Người ký, Chức vụ người ký | Nguyễn Văn Bình — KT. CHỦ TỊCH, PHÓ CHỦ TỊCH |
 | Tên tệp (bấm để mở), Đường dẫn tệp gốc, Ngày ghi nhận | |
 | Cần kiểm tra | "Thiếu người ký"… — dòng được tô vàng khi app không nhận ra đủ 5 trường chính |
+| Ký số | Trần Chí Hùng (24/03/2026 08:36); ỦY BAN NHÂN DÂN THÀNH PHỐ CẦN THƠ (24/03/2026 08:53) |
 
 - Sổ được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
+- **PDF ký số** (ví dụ ký bằng VGCA): trên trang thường để trống số và ngày, văn thư điền số, ngày, tháng bằng hình chữ ký số đặt vào chỗ trống. App đọc được các giá trị này (không sửa tệp), và lấy thêm từ chữ ký số: **người ký** (khi tên không in trên trang), **cơ quan ban hành** (với phụ lục) và **ngày ban hành** khi trang không có (cột *Cần kiểm tra* ghi "ngày lấy theo thời điểm ký số"). Cột **Ký số** liệt kê người/cơ quan đã ký và thời điểm ký. App **không** kiểm tra tính hợp lệ của chữ ký; muốn xác thực, mở tệp bằng phần mềm ký số (VGCA, Adobe Acrobat…).
+- **Phụ lục** được ghi loại "Phụ lục", số ký hiệu là của văn bản chính ("Kèm theo Kế hoạch số …"), trích yếu là tên phụ lục kèm dòng "Kèm theo…".
 - Chỉ ghi văn bản hành chính; bảng tính, CSV, ảnh… không có số ký hiệu/ngày ban hành thì không ghi.
 - Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, đầu danh sách hiện "n văn bản vào sổ" — bấm để mở.
 - Nếu không ghi được (ví dụ sổ đang mở và bị khoá), app báo lỗi; tệp kết quả vẫn được tạo bình thường. Đóng sổ rồi chạy lại để ghi.

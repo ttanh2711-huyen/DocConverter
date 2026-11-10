@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TextIO
 
 from docconv.events import Emitter
-from docconv.metadata import DocMeta, extract
+from docconv.metadata import DocMeta, extract, merge, with_signatures
 from docconv.ocr import OcrSettings
 from docconv.paths import dest_dir, unique
 from docconv.router import SUPPORTED_EXTS, UnsupportedFormat, kind_of
@@ -101,7 +101,7 @@ class Converter:
                       + ("" if is_text else ", nhận dạng chữ (OCR)"))
             result = pdf_docling.analyze(src, force_ocr=not is_text, settings=self.ocr or OcrSettings())
         produced: list[Path] = []
-        self.text = _safe_text(lambda: result.document.export_to_markdown() if result else _pdf_text(src))
+        self.text = _safe_text(lambda: result.document.export_to_markdown()) if result else ""
         if "md" in self.formats:
             self.emit("progress", file=str(src), stage="markdown", message="Đang ghi Markdown")
             md = tmp / self._final(dest, src.stem, ".md").name
@@ -135,13 +135,6 @@ def _safe_text(read) -> str:
         return ""
 
 
-def _pdf_text(src: Path) -> str:
-    """Lớp chữ của PDF (khi chỉ xuất Word nên không có Markdown từ Docling)."""
-    from docconv.pdf_kind import layout_text
-
-    return layout_text(src)
-
-
 def _user_message(e: Exception, src: Path) -> str:
     if isinstance(e, UnsupportedFormat):
         return str(e)
@@ -158,6 +151,22 @@ def _meta(text: str) -> DocMeta:
     except Exception:  # trích thông tin là phần phụ, không làm hỏng kết quả chuyển đổi
         logging.exception("Không trích được thông tin văn bản")
         return DocMeta()
+
+
+def _document_meta(src: Path, text: str) -> DocMeta:
+    """Thông tin văn bản. Với PDF: ưu tiên chữ theo bố cục trang (đọc được số, ngày do chữ ký số điền vào
+    chỗ trống), bổ sung từ Markdown của Docling (bản scan có OCR) và từ chữ ký số trong tệp."""
+    meta = _meta(text)
+    if src.suffix.lower() != ".pdf":
+        return meta
+    from docconv import pdf_meta
+
+    meta = merge(_meta(_safe_text(lambda: pdf_meta.layout_text(src))), meta)
+    try:
+        return with_signatures(meta, pdf_meta.signatures(src))
+    except Exception:
+        logging.exception("Không đọc được chữ ký số")
+        return meta
 
 
 def _write_register(path: Path, entries: list, emit: Emitter) -> None:
@@ -255,7 +264,7 @@ def main(argv: list[str] | None = None, out: TextIO | None = None, err: TextIO |
                 emit("error", file=str(src), message=_user_message(e, src), detail=f"{type(e).__name__}: {e}")
                 continue
             ok += 1
-            meta = _meta(converter.text)
+            meta = _document_meta(src, converter.text)
             if meta.is_document:
                 entries.append((src, meta))
             emit("done", file=str(src), outputs=[str(p) for p in outputs],

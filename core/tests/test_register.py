@@ -26,7 +26,7 @@ def test_creates_register_with_header_and_typed_date(tmp_path):
     assert (result.added, result.updated, result.total) == (1, 0, 1)
     ws = openpyxl.load_workbook(book)[register.SHEET]
     assert [c.value for c in ws[1]] == [title for title, _ in register.COLUMNS]
-    assert ws.freeze_panes == "C2" and ws.auto_filter.ref == "A1:L2"
+    assert ws.freeze_panes == "C2" and ws.auto_filter.ref == "A1:M2"
     row = rows(book)[0]
     assert row[:5] == (1, "Quyết định", "1234/QĐ-UBND", datetime(2026, 3, 15), "ỦY BAN NHÂN DÂN TỈNH CÀ MAU")
     assert row[6:10] == ("Nguyễn Văn Bình", "KT. CHỦ TỊCH, PHÓ CHỦ TỊCH", "Quyết định 1234.pdf", "/a/Quyết định 1234.pdf")
@@ -52,13 +52,14 @@ def test_keeps_other_sheets_and_user_columns(tmp_path):
     book = tmp_path / "so.xlsx"
     register.write(book, [register.Entry(Path("/a/1.pdf"), QD)], now=NOW)
     wb = openpyxl.load_workbook(book)
-    wb[register.SHEET].cell(2, 13, "ghi chú riêng")
+    user_col = len(register.COLUMNS) + 1  # cột người dùng tự thêm sau các cột của sổ
+    wb[register.SHEET].cell(2, user_col, "ghi chú riêng")
     wb.create_sheet("Thống kê")["A1"] = "giữ nguyên"
     wb.save(book)
     register.write(book, [register.Entry(Path("/a/1.pdf"), QD)], now=NOW)
     wb = openpyxl.load_workbook(book)
     assert wb["Thống kê"]["A1"].value == "giữ nguyên"
-    assert wb[register.SHEET].cell(2, 13).value == "ghi chú riêng"
+    assert wb[register.SHEET].cell(2, user_col).value == "ghi chú riêng"
 
 
 def test_refuses_foreign_sheet_with_same_name(tmp_path):
@@ -115,3 +116,46 @@ def test_cli_reads_two_column_pdf(copy_fixture, tmp_path, to):
         "summary": "Về việc phê duyệt Kế hoạch sử dụng đất năm 2026 của huyện Trần Văn Thời",
     }
     assert rows(tmp_path / "so.xlsx")[0][11] in ("", None)
+
+
+def test_signed_pdf_number_and_date_come_from_signature_appearances(copy_fixture, tmp_path):
+    """Văn bản ký số (VGCA): số, ngày, tháng được điền bằng hình chữ ký số vào chỗ trống trên trang."""
+    pdf = copy_fixture("quyet_dinh_ky_so.pdf")
+    proc = run_cli("convert", pdf, "--json", "--to", "docx", "--register", tmp_path / "so.xlsx")
+    assert proc.returncode == 0, proc.stderr
+    meta = next(e for e in events(proc) if e["event"] == "done")["meta"]
+    assert (meta["number"], meta["date"], meta["issuer"]) == ("1234/QĐ-UBND", "2026-03-15", "ỦY BAN NHÂN DÂN TỈNH CÀ MAU")
+    assert meta["signer"] == "Nguyễn Văn Bình"  # tên không in trên trang, lấy theo chữ ký số
+    assert [s["name"] for s in meta["signatures"]] == ["Nguyễn Văn Bình", "ỦY BAN NHÂN DÂN TỈNH CÀ MAU"]
+    row = rows(tmp_path / "so.xlsx")[0]
+    assert row[12] == "Nguyễn Văn Bình (15/03/2026 08:36); ỦY BAN NHÂN DÂN TỈNH CÀ MAU (15/03/2026 09:53)"
+
+
+def test_old_register_gets_signature_column_without_touching_user_columns(tmp_path):
+    book = tmp_path / "cu.xlsx"
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = register.SHEET
+    for c, (title, _) in enumerate(register.BASE_COLUMNS, 1):  # sổ của bản trước: 12 cột
+        ws.cell(1, c, title)
+    ws.cell(2, 1, 1); ws.cell(2, 10, "/a/1.pdf"); ws.cell(2, 13, "ghi chú riêng")
+    wb.save(book)
+    signed = DocMeta(**{**QD.__dict__, "signatures": [{"name": "Nguyễn Văn Bình", "time": "2026-03-15T08:36:19+07:00"}]})
+    register.write(book, [register.Entry(Path("/a/1.pdf"), signed)], now=NOW)
+    ws = openpyxl.load_workbook(book)[register.SHEET]
+    assert ws.cell(2, 13).value == "ghi chú riêng"
+    assert ws.cell(1, 14).value == "Ký số" and ws.cell(2, 14).value == "Nguyễn Văn Bình (15/03/2026 08:36)"
+
+
+def test_date_from_signature_is_flagged(tmp_path):
+    book = tmp_path / "so.xlsx"
+    meta = DocMeta(**{**QD.__dict__, "date_source": "ký số"})
+    register.write(book, [register.Entry(Path("/a/1.pdf"), meta)], now=NOW)
+    assert rows(book)[0][11] == "ngày lấy theo thời điểm ký số"
+
+
+def test_appendix_needs_no_signer(tmp_path):
+    book = tmp_path / "so.xlsx"
+    appendix = DocMeta("Phụ lục", "7559/KH-SNNMT", "2026-06-17", "SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG")
+    register.write(book, [register.Entry(Path("/a/pl.pdf"), appendix)], now=NOW)
+    assert rows(book)[0][11] in ("", None)

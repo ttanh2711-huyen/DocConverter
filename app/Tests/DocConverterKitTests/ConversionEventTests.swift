@@ -42,3 +42,11 @@ let protocolSample = """
     #expect(buffer.append(Data(bytes[..<cut])) == [])
     #expect(buffer.append(Data(bytes[cut...])) == ["Tài liệu"])
 }
+
+@Test func decodesSignedPdfMeta() throws {
+    let line = #"{"event":"done","file":"/a/qd.pdf","outputs":[],"meta":{"number":"1157/QĐ-UBND","date":"2026-03-24","date_source":"ký số","signatures":[{"name":"Trần Chí Hùng","time":"2026-03-24T08:36:19+07:00"},{"name":"ỦY BAN NHÂN DÂN THÀNH PHỐ CẦN THƠ","time":"2026-03-24T08:53:49+07:00"}]}}"#
+    let meta = try #require(try ConversionEvent.decode(line: line).meta)
+    #expect(meta.signatures?.map(\.name) == ["Trần Chí Hùng", "ỦY BAN NHÂN DÂN THÀNH PHỐ CẦN THƠ"])
+    #expect(meta.signatures?.first?.displayTime == "24/03/2026 08:36")
+    #expect(meta.dateSource == "ký số")
+}
