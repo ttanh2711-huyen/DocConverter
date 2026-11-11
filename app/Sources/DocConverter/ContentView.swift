@@ -130,8 +130,8 @@ struct ListHeader: View {
 
             Spacer(minLength: 8)
 
-            if let book = model.store.register {
-                RegisterChip(result: book) { model.openRegister() }
+            if model.store.register != nil || !model.store.batchRegisters.isEmpty {
+                RegisterMenu(model: model)
                     .transition(.scale(scale: 0.8).combined(with: .opacity))
             }
 

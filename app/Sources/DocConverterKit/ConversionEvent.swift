@@ -27,11 +27,13 @@ public struct ConversionEvent: Decodable, Sendable, Equatable {
     public var added: Int?
     public var updated: Int?
     public var error: String?
+    /// `register`: "all" (sổ chung) hoặc "batch" (tệp tổng hợp của lần chạy).
+    public var scope: String?
 
     enum CodingKeys: String, CodingKey {
         case kind = "event"
         case file, index, total, pages, stage, message, detail, outputs, seconds, ok, failed, skipped, cancelled
-        case meta, path, added, updated, error
+        case meta, path, added, updated, error, scope
     }
 
     public init(kind: Kind, file: String? = nil) {

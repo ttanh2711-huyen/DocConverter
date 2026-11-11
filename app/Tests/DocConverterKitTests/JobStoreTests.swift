@@ -101,3 +101,14 @@ func ev(_ json: String) -> ConversionEvent {
     store.remove(Set(["/a/1.pdf", "/a/3.pdf"]))
     #expect(store.items.map(\.url.lastPathComponent) == ["2.pdf"])
 }
+
+@Test @MainActor func batchAndSharedRegistersAreKeptApart() {
+    let store = JobStore()
+    store.add(files: [URL(fileURLWithPath: "/a/1.docx")])
+    store.apply(ev(#"{"event":"register","scope":"all","path":"/s/chung.xlsx","added":1,"updated":0,"total":9}"#))
+    store.apply(ev(#"{"event":"register","scope":"batch","path":"/a/Tổng hợp văn bản 2026-11-11 0930.xlsx","added":1,"updated":0,"total":1}"#))
+    #expect(store.register?.url.lastPathComponent == "chung.xlsx" && store.register?.isBatch == false)
+    #expect(store.batchRegisters.map(\.url.lastPathComponent) == ["Tổng hợp văn bản 2026-11-11 0930.xlsx"])
+    store.markStarted()
+    #expect(store.register == nil && store.batchRegisters.isEmpty)
+}

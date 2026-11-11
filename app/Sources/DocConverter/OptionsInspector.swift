@@ -15,6 +15,7 @@ struct OptionsInspector: View {
     @AppStorage(Keys.trashOriginalsConfirmed) private var trashOriginalsConfirmed = false
     @AppStorage(Keys.ocrMode) private var ocrMode = OCR.Mode.auto.rawValue
     @AppStorage(Keys.registerEnabled) private var registerEnabled = true
+    @AppStorage(Keys.batchRegisterEnabled) private var batchRegisterEnabled = true
     @AppStorage(Keys.registerPath) private var registerPath = ""
     @State private var confirmTrash = false
 
@@ -57,7 +58,8 @@ struct OptionsInspector: View {
             }
 
             Section {
-                Toggle("Ghi thông tin văn bản vào sổ", isOn: $registerEnabled)
+                Toggle("Sổ chung mọi lần chuyển", isOn: $registerEnabled)
+                    .help("Một sổ cộng dồn văn bản của tất cả các lần chuyển; chuyển lại tệp cũ thì cập nhật đúng dòng đó.")
                 if registerEnabled {
                     FileRow(icon: "tablecells.fill", name: registerURL.deletingPathExtension().lastPathComponent,
                             help: registerURL.path, tint: Theme.seal) {
@@ -75,10 +77,15 @@ struct OptionsInspector: View {
                         .fixedSize()
                     }
                 }
+                Toggle("Tệp riêng cho mỗi lần chuyển", isOn: $batchRegisterEnabled)
+                    .help("Mỗi lần chuyển tạo một tệp Excel mới, chỉ gồm văn bản lần đó, lưu trong thư mục chứa văn bản "
+                          + "(tên kèm ngày giờ, ví dụ \"Tổng hợp văn bản 2026-11-11 0930.xlsx\").")
             } header: {
-                SectionHeader("Sổ tổng hợp (Excel)", systemImage: "checkmark.seal.fill", color: Theme.seal)
+                SectionHeader("Tổng hợp văn bản (Excel)", systemImage: "checkmark.seal.fill", color: Theme.seal)
             } footer: {
-                Footnote("Loại, số ký hiệu, ngày ban hành, cơ quan, người ký, trích yếu; cộng dồn mỗi lần chuyển.")
+                Footnote(batchRegisterEnabled
+                         ? "Tệp riêng: lưu cạnh văn bản, tên kèm ngày giờ."
+                         : "Ghi loại, số ký hiệu, ngày ban hành, cơ quan, người ký, trích yếu.")
             }
 
             Section {

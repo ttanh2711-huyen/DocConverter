@@ -58,9 +58,8 @@ struct ActivityPill: View {
         if s.active > 0 { return "\(s.active) tệp sẵn sàng chuyển đổi" }
         var parts = ["\(s.done) hoàn tất"]
         if s.failed + s.cancelled > 0 { parts.append("\(s.failed + s.cancelled) lỗi") }
-        if let book = model.store.register, book.error == nil, book.added + book.updated > 0 {
-            parts.append("\(book.added + book.updated) vào sổ")
-        }
+        let recorded = model.store.items.filter(\.registered).count
+        if recorded > 0 { parts.append("\(recorded) vào sổ") }
         return parts.joined(separator: " · ")
     }
 }
@@ -75,24 +74,23 @@ struct PrimaryActionButton: View {
             Button(role: .cancel) { model.cancel() } label: {
                 Label("Huỷ", systemImage: "stop.fill")
             }
-            .labelStyle(.titleAndIcon)
+            .buttonStyle(ProminentActionStyle(tint: Theme.failed))
             .keyboardShortcut(.cancelAction)
             .help("Dừng ngay, không để lại tệp dở dang (⌘. hoặc Esc)")
         } else if start.count == 0, !model.allOutputs.isEmpty {
             Button { model.revealAllOutputs() } label: {
                 Label("Xem kết quả", systemImage: "folder")
             }
-            .labelStyle(.titleAndIcon)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(ProminentActionStyle(tint: Theme.done))
             .help("Hiện tất cả tệp kết quả trong Finder (⇧⌘R)")
         } else {
             Button { model.start() } label: {
                 Label(start.isRetry ? "Thử lại \(start.count) tệp" : (start.count == 0 ? "Chuyển đổi" : "Chuyển đổi \(start.count) tệp"),
                       systemImage: start.isRetry ? "arrow.clockwise" : "play.fill")
                     .monospacedDigit()
+                    .symbolEffect(.bounce, value: start.count)
             }
-            .labelStyle(.titleAndIcon)
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(ProminentActionStyle())
             .keyboardShortcut(.defaultAction)
             .disabled(!model.canStart)
             .help("Bắt đầu chuyển đổi (⌘R hoặc ↩)")
@@ -140,40 +138,105 @@ struct DestinationMenu: View {
     }
 }
 
-/// Kết quả ghi sổ tổng hợp ở đầu danh sách; bấm để mở sổ.
-struct RegisterChip: View {
-    let result: RegisterResult
-    let action: () -> Void
+/// Kết quả tổng hợp ở đầu danh sách: bấm để mở tệp tổng hợp của lần này (không có thì mở sổ chung);
+/// mũi tên bên cạnh liệt kê cả hai loại.
+struct RegisterMenu: View {
+    let model: AppModel
 
     var body: some View {
-        Button(action: action) {
-            // Thiếu chỗ thì chỉ còn biểu tượng và con số.
-            ViewThatFits(in: .horizontal) {
-                content(label)
-                content(result.error != nil ? "!" : "\(result.added + result.updated)")
+        let batches = model.store.batchRegisters
+        let shared = model.store.register
+        let failed = (batches + [shared].compactMap { $0 }).first { $0.error != nil }
+        let count = model.store.items.filter(\.registered).count
+        HStack(spacing: 2) {
+            Button {
+                if batches.contains(where: { $0.error == nil }) { model.openBatchRegister() } else { model.openRegister() }
+            } label: {
+                ViewThatFits(in: .horizontal) {
+                    chip(failed != nil && count == 0 ? "Chưa ghi được tệp tổng hợp" : "\(count) văn bản đã tổng hợp",
+                         failed: failed != nil && count == 0)
+                    chip(failed != nil && count == 0 ? "!" : "\(count)", failed: failed != nil && count == 0)
+                }
             }
-            .foregroundStyle(result.error == nil ? Theme.seal : Theme.failed)
-            .padding(.horizontal, 8).padding(.vertical, 3)
-            .background((result.error == nil ? Theme.seal : Theme.failed).opacity(0.1), in: .capsule)
-            .contentShape(.capsule)
+            .buttonStyle(.plain)
+            .help(failed?.error ?? "Mở tệp tổng hợp vừa tạo")
+
+            Menu {
+                ForEach(batches, id: \.url) { book in
+                    if let error = book.error {
+                        Text(error)
+                    } else {
+                        Button("Mở “\(book.url.deletingPathExtension().lastPathComponent)”", systemImage: "tablecells") {
+                            NSWorkspace.shared.open(book.url)
+                        }
+                    }
+                }
+                if batches.contains(where: { $0.error == nil }) {
+                    Button("Hiện tệp tổng hợp lần này trong Finder", systemImage: "folder") {
+                        NSWorkspace.shared.activateFileViewerSelecting(batches.filter { $0.error == nil }.map(\.url))
+                    }
+                }
+                if let shared {
+                    Divider()
+                    if let error = shared.error {
+                        Text(error)
+                    } else {
+                        Button("Mở sổ chung (\(shared.total) văn bản)", systemImage: "books.vertical") { model.openRegister() }
+                    }
+                }
+            } label: {
+                Image(systemName: "chevron.down")
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+            .help("Tệp tổng hợp lần này và sổ chung")
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
-        .help(result.error ?? "Sổ \(result.url.lastPathComponent): \(result.total) văn bản. Bấm để mở (⇧⌘E).")
+        .accessibilityElement(children: .contain)
     }
 
-    private func content(_ text: String) -> some View {
-        HStack(spacing: 5) {
-            Image(systemName: result.error == nil ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+    private func chip(_ text: String, failed: Bool) -> some View {
+        let color = failed ? Theme.failed : Theme.seal
+        return HStack(spacing: 5) {
+            Image(systemName: failed ? "exclamationmark.triangle.fill" : "checkmark.seal.fill")
             Text(text).monospacedDigit().lineLimit(1)
             Image(systemName: "arrow.up.forward").font(.caption2.weight(.semibold))
         }
         .fixedSize()
+        .foregroundStyle(color)
+        .padding(.horizontal, 8).padding(.vertical, 3)
+        .background(color.opacity(0.1), in: .capsule)
+        .contentShape(.capsule)
     }
+}
 
-    private var label: String {
-        if result.error != nil { return "Chưa ghi được sổ" }
-        let count = result.added + result.updated
-        return count == 0 ? "Không có văn bản mới vào sổ" : "\(count) văn bản vào sổ"
+/// Kiểu nút hành động chính: nền màu nhấn đậm dạng viên thuốc, chữ trắng đậm, bóng nhẹ cùng màu,
+/// nổi hẳn so với các nút biểu tượng khác trên thanh công cụ. Vẫn theo màu nhấn người dùng chọn.
+struct ProminentActionStyle: ButtonStyle {
+    var tint: Color = .accentColor
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.controlActiveState) private var activeState
+    @State private var hovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        let active = activeState != .inactive
+        configuration.label
+            .font(.system(size: 13, weight: .bold))  // chữ đậm: đạt 3:1 trên nền màu nhấn xanh mặc định (4:1)
+            .labelStyle(.titleAndIcon)
+            .foregroundStyle(isEnabled ? .white : .secondary)
+            .padding(.horizontal, 14)
+            .frame(height: 28)
+            .background {
+                Capsule()
+                    .fill(isEnabled ? AnyShapeStyle(tint.gradient) : AnyShapeStyle(.quaternary))
+                    .brightness(configuration.isPressed ? -0.08 : (hovering ? 0.05 : 0))
+                    .opacity(isEnabled && !active ? 0.75 : 1)
+            }
+            .overlay { Capsule().strokeBorder(.white.opacity(isEnabled ? 0.18 : 0), lineWidth: 0.5) }
+            .shadow(color: isEnabled && active ? tint.opacity(0.35) : .clear, radius: 5, y: 2)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .contentShape(.capsule)
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
     }
 }

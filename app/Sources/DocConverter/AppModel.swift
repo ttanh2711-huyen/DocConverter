@@ -123,6 +123,16 @@ final class AppModel {
         }
     }
 
+    /// Mở tệp tổng hợp của lần chuyển vừa rồi (nhiều thư mục: hiện tất cả trong Finder).
+    func openBatchRegister() {
+        let files = store.batchRegisters.filter { $0.error == nil }.map(\.url)
+        if files.count == 1 {
+            NSWorkspace.shared.open(files[0])
+        } else if !files.isEmpty {
+            NSWorkspace.shared.activateFileViewerSelecting(files)
+        }
+    }
+
     /// Chọn sổ có sẵn (`existing`) hoặc đặt tên sổ mới.
     func chooseRegister(existing: Bool) {
         let current = registerURL ?? ConversionOptions.defaultRegister

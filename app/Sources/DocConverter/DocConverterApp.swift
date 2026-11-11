@@ -77,7 +77,10 @@ struct AppCommands: Commands {
             Button("Hiện kết quả trong Finder") { model.revealAllOutputs() }
                 .keyboardShortcut("r", modifiers: [.command, .shift])
                 .disabled(model.store.isRunning || model.allOutputs.isEmpty)
-            Button("Mở sổ tổng hợp (Excel)") { model.openRegister() }
+            Button("Mở tệp tổng hợp lần này") { model.openBatchRegister() }
+                .keyboardShortcut("e", modifiers: [.command, .option, .shift])
+                .disabled(model.store.batchRegisters.allSatisfy { $0.error != nil })
+            Button("Mở sổ chung (Excel)") { model.openRegister() }
                 .keyboardShortcut("e", modifiers: [.command, .shift])
             Divider()
             Button("Lưu cạnh tệp gốc") {

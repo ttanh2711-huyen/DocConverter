@@ -42,7 +42,8 @@
 | ⌘R hoặc ↩ | Bắt đầu chuyển đổi |
 | ⌘. hoặc Esc | Huỷ |
 | ⇧⌘R | Hiện tất cả kết quả trong Finder |
-| ⇧⌘E | Mở sổ tổng hợp (Excel) |
+| ⇧⌘E | Mở sổ chung (Excel) |
+| ⌥⇧⌘E | Mở tệp tổng hợp của lần chuyển vừa rồi |
 | ⌘1 / ⌘2 / ⌘3 / ⌘4 | Lọc: Tất cả / Đang chờ / Hoàn tất / Lỗi |
 | ⌫ / ⇧⌘⌫ | Xoá mục đã chọn / xoá cả danh sách |
 | ⌥⌘I | Ẩn/hiện bảng tuỳ chọn |
@@ -65,7 +66,12 @@ Tên kết quả không bao giờ ghi đè tệp có sẵn: nếu `a.md` đã t�
 
 ### Sổ tổng hợp văn bản
 
-Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổng hợp, mặc định **bật**) để mỗi lần chuyển đổi, app tự nhận các thông tin theo thể thức văn bản hành chính (Nghị định 30/2020/NĐ-CP) và ghi vào một tệp Excel chung, mặc định `~/Documents/Tổng hợp văn bản.xlsx`:
+Mỗi lần chuyển đổi, app tự nhận các thông tin theo thể thức văn bản hành chính (Nghị định 30/2020/NĐ-CP) và ghi vào Excel theo hai cách (bảng Tuỳ chọn → Tổng hợp văn bản, cả hai mặc định **bật**):
+
+- **Sổ chung mọi lần chuyển**: một tệp cộng dồn văn bản của tất cả các lần chuyển, mặc định `~/Documents/Tổng hợp văn bản.xlsx`.
+- **Tệp riêng cho mỗi lần chuyển**: mỗi lần chuyển tạo một tệp **mới**, chỉ gồm văn bản của lần đó, lưu **trong thư mục chứa văn bản** (thư mục bạn đã thêm; tệp lẻ thì thư mục chứa tệp), tên kèm ngày giờ, ví dụ `Tổng hợp văn bản 2026-11-11 0930.xlsx`. Văn bản từ nhiều thư mục thì mỗi thư mục một tệp. Lần sau thêm cả thư mục, app bỏ qua các tệp tổng hợp này (và tệp khoá `~$…` của Excel), không chuyển đổi chúng.
+
+Sau mỗi lần chạy, đầu danh sách hiện "n văn bản đã tổng hợp ↗": bấm để mở tệp riêng vừa tạo, mũi tên ▾ bên cạnh để mở sổ chung hoặc hiện tệp trong Finder. Hai loại tệp có cùng các cột:
 
 | Cột | Ví dụ |
 |---|---|
@@ -79,11 +85,11 @@ Bật **Ghi thông tin văn bản vào sổ** (bảng Tuỳ chọn → Sổ tổ
 | Cần kiểm tra | "Thiếu người ký"… — dòng được tô vàng khi app không nhận ra đủ 5 trường chính |
 | Ký số | Trần Chí Hùng (24/03/2026 08:36); ỦY BAN NHÂN DÂN THÀNH PHỐ CẦN THƠ (24/03/2026 08:53) |
 
-- Sổ được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
+- Sổ chung được **cộng dồn**: chuyển lại một tệp đã có trong sổ thì cập nhật đúng dòng đó, không thêm dòng trùng. Cột hay trang tính bạn tự thêm vào sổ được giữ nguyên.
 - **PDF ký số** (ví dụ ký bằng VGCA): trên trang thường để trống số và ngày, văn thư điền số, ngày, tháng bằng hình chữ ký số đặt vào chỗ trống. App đọc được các giá trị này (không sửa tệp), và lấy thêm từ chữ ký số: **người ký** (khi tên không in trên trang), **cơ quan ban hành** (với phụ lục) và **ngày ban hành** khi trang không có (cột *Cần kiểm tra* ghi "ngày lấy theo thời điểm ký số"). Cột **Ký số** liệt kê người/cơ quan đã ký và thời điểm ký. App **không** kiểm tra tính hợp lệ của chữ ký; muốn xác thực, mở tệp bằng phần mềm ký số (VGCA, Adobe Acrobat…).
 - **Phụ lục** được ghi loại "Phụ lục", số ký hiệu là của văn bản chính ("Kèm theo Kế hoạch số …"), trích yếu là tên phụ lục kèm dòng "Kèm theo…".
 - Chỉ ghi văn bản hành chính; bảng tính, CSV, ảnh… không có số ký hiệu/ngày ban hành thì không ghi.
-- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, đầu danh sách hiện "n văn bản vào sổ" — bấm để mở.
+- Đổi sổ: **Đổi ▾ → Chọn sổ có sẵn…** hoặc **Tạo sổ mới…**. Nút **Mở** (⇧⌘E) mở sổ bằng Excel/Numbers; sau mỗi lần chạy, đầu danh sách hiện "n văn bản đã tổng hợp" — bấm để mở.
 - Nếu không ghi được (ví dụ sổ đang mở và bị khoá), app báo lỗi; tệp kết quả vẫn được tạo bình thường. Đóng sổ rồi chạy lại để ghi.
 - Thông tin được nhận bằng quy tắc nên có thể sai với văn bản trình bày khác thể thức hoặc bản scan mờ: hãy xem cột **Cần kiểm tra** và rà lại trước khi dùng.
 

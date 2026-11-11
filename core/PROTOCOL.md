@@ -6,7 +6,7 @@
 docconv convert [INPUT ...] [--manifest FILE|-] [--recursive]
                 [--to md|docx|md,docx]
                 [--out-mode beside|dir] [--out DIR]
-                [--overwrite] [--json] [--register SỔ.xlsx]
+                [--overwrite] [--json] [--register SỔ.xlsx] [--batch-register]
 ```
 
 - `INPUT` là tệp hoặc thư mục. Với thư mục, chỉ lấy tệp ngay trong thư mục đó; thêm `--recursive` để lấy cả thư mục con. Tệp/thư mục ẩn (tên bắt đầu bằng `.`) bị bỏ qua mà không báo. Tệp có đuôi không hỗ trợ trong thư mục sinh sự kiện `skipped`.
@@ -17,6 +17,7 @@ docconv convert [INPUT ...] [--manifest FILE|-] [--recursive]
 - Ảnh của `.md` (từ PDF) nằm trong thư mục `<tên>_assets/` cạnh tệp `.md`.
 - PDF ký số (ví dụ ký bằng VGCA) thường để trống số và ngày trên trang; văn thư điền số, ngày, tháng bằng hình hiển thị của chữ ký số đặt vào chỗ trống. Lõi "dàn phẳng" chữ ký vào trang (chỉ trong bộ nhớ, không sửa tệp) rồi đọc chữ theo vị trí, nên đọc được các giá trị này. Người ký, cơ quan ban hành và (khi thiếu) ngày ban hành được bổ sung từ thông tin chữ ký số; tính hợp lệ của chữ ký **không** được kiểm tra.
 - `--register`: sau khi chạy xong (kể cả khi bị huỷ), ghi các văn bản hành chính đã chuyển thành công vào sổ Excel (trang tính "Sổ văn bản"): loại văn bản, số ký hiệu, ngày ban hành, cơ quan ban hành, trích yếu, người ký, chức vụ, tệp gốc. Sổ được cộng dồn qua các lần chạy; tệp gốc đã có trong sổ thì cập nhật dòng cũ. Tệp không nhận ra là văn bản hành chính (bảng tính, CSV…) không được ghi.
+- `--batch-register`: tạo thêm **tệp tổng hợp mới** chỉ gồm văn bản của lần chạy này, tên `Tổng hợp văn bản <yyyy-mm-dd HHMM>.xlsx`, đặt trong thư mục chứa văn bản (thư mục đã thêm; tệp lẻ thì thư mục chứa tệp; văn bản từ nhiều thư mục thì mỗi thư mục một tệp). Không có văn bản hành chính thì không tạo tệp. Khi quét thư mục, các tệp `Tổng hợp văn bản*.xlsx` và tệp khoá `~$…` của Excel được bỏ qua.
 - Mọi đầu ra được tạo trong thư mục tạm `.docconv-tmp-*` cùng thư mục đích, và chỉ được chuyển vào chỗ khi tệp đó **đã thành công toàn bộ**. Lỗi hoặc huỷ thì không để lại tệp dở dang.
 
 ## Sự kiện (`--json`)
@@ -32,7 +33,7 @@ Mỗi dòng stdout là **một đối tượng JSON** (UTF-8). Log của thư vi
 | `skipped` | `file`, `message` | Bỏ qua (đuôi không hỗ trợ khi quét thư mục) |
 | `error` | `file`, `message` (tiếng Việt, cho người dùng), `detail` (kỹ thuật) | Tệp lỗi; các tệp khác vẫn tiếp tục |
 | `cancelled` | | Nhận SIGTERM/SIGINT; đã dọn tệp dở dang |
-| `register` | `path`, rồi `added`, `updated`, `total` hoặc `error` | Chỉ khi có `--register`: kết quả ghi sổ tổng hợp, ngay trước `finished` |
+| `register` | `scope` (`all`: sổ chung, `batch`: tệp tổng hợp của lần chạy), `path`, rồi `added`, `updated`, `total` hoặc `error` | Chỉ khi có `--register`/`--batch-register`: kết quả ghi từng tệp tổng hợp, ngay trước `finished` |
 | `finished` | `ok`, `failed`, `skipped`, `cancelled` (bool) | Dòng cuối cùng |
 
 Ví dụ:
@@ -45,7 +46,8 @@ Ví dụ:
 {"event": "done", "file": "/Users/a/Tài liệu/x.pdf", "outputs": ["/Users/a/Tài liệu/x.md", "/Users/a/Tài liệu/x_assets", "/Users/a/Tài liệu/x.docx"], "seconds": 12.4, "meta": {"doc_type": "Quyết định", "number": "12/QĐ-UBND", "date": "2026-03-15", "issuer": "ỦY BAN NHÂN DÂN TỈNH CÀ MAU", "signer": "Nguyễn Văn Bình", "position": "KT. CHỦ TỊCH, PHÓ CHỦ TỊCH"}}
 {"event": "start", "file": "/Users/a/Tài liệu/cu.doc", "index": 2, "total": 2, "kind": null, "pages": null}
 {"event": "error", "file": "/Users/a/Tài liệu/cu.doc", "message": "Không hỗ trợ định dạng .doc: cu.doc", "detail": "UnsupportedFormat"}
-{"event": "register", "path": "/Users/a/Documents/Tổng hợp văn bản.xlsx", "added": 1, "updated": 0, "total": 37}
+{"event": "register", "scope": "all", "path": "/Users/a/Documents/Tổng hợp văn bản.xlsx", "added": 1, "updated": 0, "total": 37}
+{"event": "register", "scope": "batch", "path": "/Users/a/Tài liệu/Tổng hợp văn bản 2026-11-11 0930.xlsx", "added": 1, "updated": 0, "total": 1}
 {"event": "finished", "ok": 1, "failed": 1, "skipped": 0, "cancelled": false}
 ```
 

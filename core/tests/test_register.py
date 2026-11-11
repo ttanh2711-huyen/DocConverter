@@ -98,7 +98,7 @@ def test_cli_reports_register_error_but_keeps_outputs(copy_fixture, tmp_path):
     proc = run_cli("convert", cong_van, "--json", "--register", blocker / "so.xlsx")
     evs = events(proc)
     assert proc.returncode == 0
-    assert next(e for e in evs if e["event"] == "register")["error"].startswith("Không ghi được sổ tổng hợp")
+    assert next(e for e in evs if e["event"] == "register")["error"].startswith("Không ghi được tệp tổng hợp")
     assert (cong_van.parent / "cong_van.md").exists()
 
 
@@ -159,3 +159,32 @@ def test_appendix_needs_no_signer(tmp_path):
     appendix = DocMeta("Phụ lục", "7559/KH-SNNMT", "2026-06-17", "SỞ NÔNG NGHIỆP VÀ MÔI TRƯỜNG")
     register.write(book, [register.Entry(Path("/a/pl.pdf"), appendix)], now=NOW)
     assert rows(book)[0][11] in ("", None)
+
+
+def test_batch_register_is_a_new_file_in_the_source_folder(copy_fixture, workdir, tmp_path):
+    """--batch-register: mỗi lần chạy một tệp tổng hợp mới trong thư mục chứa văn bản, chỉ gồm văn bản lần đó;
+    lần quét thư mục sau bỏ qua chính tệp tổng hợp này."""
+    copy_fixture("cong_van.docx")
+    copy_fixture("thong_ke.xlsx")
+    out = tmp_path / "Kết quả"
+    proc = run_cli("convert", workdir, "--json", "--out-mode", "dir", "--out", out, "--batch-register",
+                   "--register", tmp_path / "chung.xlsx")
+    assert proc.returncode == 0, proc.stderr
+    regs = [e for e in events(proc) if e["event"] == "register"]
+    assert sorted(e["scope"] for e in regs) == ["all", "batch"]
+    batch = Path(next(e["path"] for e in regs if e["scope"] == "batch"))
+    assert batch.parent == workdir and batch.name.startswith("Tổng hợp văn bản ") and batch.suffix == ".xlsx"
+    assert [r[2] for r in rows(batch)] == ["2468/UBND-KT"]
+
+    again = run_cli("convert", workdir, "--json", "--out-mode", "dir", "--out", out, "--batch-register")
+    files = [Path(e["file"]).name for e in events(again) if e["event"] == "start"]
+    assert batch.name not in files  # không chuyển đổi chính tệp tổng hợp
+    second = [Path(e["path"]) for e in events(again) if e["event"] == "register"]
+    assert len(second) == 1 and second[0] != batch and second[0].parent == workdir  # tệp mới, không ghi đè
+
+
+def test_no_batch_file_without_documents(copy_fixture, workdir):
+    copy_fixture("thong_ke.xlsx")
+    proc = run_cli("convert", workdir, "--json", "--batch-register")
+    assert not [e for e in events(proc) if e["event"] == "register"]
+    assert not list(workdir.glob("Tổng hợp văn bản*.xlsx"))

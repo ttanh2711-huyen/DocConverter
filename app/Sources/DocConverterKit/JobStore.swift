@@ -45,8 +45,10 @@ public struct JobItem: Identifiable, Equatable, Sendable {
 public final class JobStore {
     public private(set) var items: [JobItem] = []
     public private(set) var isRunning = false
-    /// Kết quả ghi sổ tổng hợp Excel của lần chạy gần nhất.
+    /// Kết quả ghi sổ chung (cộng dồn mọi lần chạy) ở lần chạy gần nhất.
     public private(set) var register: RegisterResult?
+    /// Các tệp tổng hợp riêng của lần chạy gần nhất (mỗi thư mục văn bản một tệp).
+    public private(set) var batchRegisters: [RegisterResult] = []
     /// Gọi khi một tệp xong (để app xử lý tiếp, ví dụ đưa bản gốc vào Thùng rác).
     @ObservationIgnored public var onJobDone: ((JobItem) -> Void)?
 
@@ -128,6 +130,7 @@ public final class JobStore {
     public func markStarted() {
         isRunning = true
         register = nil
+        batchRegisters = []
         for i in items.indices { items[i].registered = false }
         for i in items.indices {
             switch items[i].status {
@@ -162,8 +165,10 @@ public final class JobStore {
             if let id { update(id) { $0.status = .failed(event.message ?? "Lỗi"); $0.detail = event.detail } }
         case .register:
             if let path = event.path {
-                register = RegisterResult(url: URL(fileURLWithPath: path), added: event.added ?? 0,
-                                          updated: event.updated ?? 0, total: event.total ?? 0, error: event.error)
+                let result = RegisterResult(url: URL(fileURLWithPath: path), added: event.added ?? 0,
+                                            updated: event.updated ?? 0, total: event.total ?? 0, error: event.error,
+                                            isBatch: event.scope == "batch")
+                if result.isBatch { batchRegisters.append(result) } else { register = result }
                 if event.error == nil {
                     for i in items.indices where items[i].status == .done && items[i].meta?.isDocument == true {
                         items[i].registered = true
@@ -199,6 +204,8 @@ public struct RegisterResult: Equatable, Sendable {
     public let updated: Int
     public let total: Int
     public let error: String?
+    /// Tệp tổng hợp riêng của lần chạy (không phải sổ chung).
+    public var isBatch = false
 }
 
 extension JobItem {

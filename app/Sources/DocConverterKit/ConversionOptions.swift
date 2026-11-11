@@ -58,13 +58,17 @@ public struct ConversionOptions: Equatable, Sendable {
     public var pdfFormat: PDFFormat
     public var location: Location
     public var ocr = OCR()
-    /// Sổ tổng hợp Excel ghi thông tin văn bản; `nil` là không ghi.
+    /// Sổ chung (cộng dồn mọi lần chuyển) ghi thông tin văn bản; `nil` là không ghi.
     public var register: URL?
+    /// Tạo thêm tệp tổng hợp mới cho mỗi lần chuyển, đặt trong thư mục chứa văn bản.
+    public var batchRegister = false
 
-    public init(pdfFormat: PDFFormat = .markdown, location: Location = .besideSource, register: URL? = nil) {
+    public init(pdfFormat: PDFFormat = .markdown, location: Location = .besideSource, register: URL? = nil,
+                batchRegister: Bool = false) {
         self.pdfFormat = pdfFormat
         self.location = location
         self.register = register
+        self.batchRegister = batchRegister
     }
 
     /// Sổ mặc định: ~/Documents/Tổng hợp văn bản.xlsx
@@ -83,6 +87,7 @@ public struct ConversionOptions: Equatable, Sendable {
         if ocr.engine != .ocrmac { args += ["--ocr-engine", ocr.engine.rawValue] }
         if !ocr.tables { args.append("--no-tables") }
         if let register { args += ["--register", register.path] }
+        if batchRegister { args.append("--batch-register") }
         return args
     }
 
@@ -104,6 +109,7 @@ public struct ConversionOptions: Equatable, Sendable {
         public static let ocrTables = "ocrTables"
         public static let registerEnabled = "registerEnabled"
         public static let registerPath = "registerPath"
+        public static let batchRegisterEnabled = "batchRegisterEnabled"
     }
 
     public static func load(from defaults: UserDefaults = .standard) -> ConversionOptions {
@@ -120,6 +126,7 @@ public struct ConversionOptions: Equatable, Sendable {
             let path = defaults.string(forKey: Keys.registerPath) ?? ""
             options.register = path.isEmpty ? defaultRegister : URL(fileURLWithPath: path)
         }
+        options.batchRegister = defaults.object(forKey: Keys.batchRegisterEnabled) as? Bool ?? true
         return options
     }
 
@@ -137,5 +144,6 @@ public struct ConversionOptions: Equatable, Sendable {
         defaults.set(ocr.tables, forKey: Keys.ocrTables)
         defaults.set(register != nil, forKey: Keys.registerEnabled)
         if let register { defaults.set(register.path, forKey: Keys.registerPath) }
+        defaults.set(batchRegister, forKey: Keys.batchRegisterEnabled)
     }
 }
