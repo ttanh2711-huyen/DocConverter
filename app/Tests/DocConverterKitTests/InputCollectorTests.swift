@@ -45,3 +45,10 @@ func makeTree(_ paths: [String]) throws -> URL {
     #expect(store.items[1].status == .skipped("Không hỗ trợ định dạng .doc"))
     #expect(store.pendingJobs.map(\.url.lastPathComponent) == ["a.pdf"])
 }
+
+@Test func skipsOwnWorkbooksWhenScanningFolders() {
+    #expect(InputCollector.isOwnWorkbook(URL(fileURLWithPath: "/a/Tổng hợp văn bản 2026-11-11 0930.xlsx")))
+    #expect(InputCollector.isOwnWorkbook(URL(fileURLWithPath: "/a/~$Báo cáo.xlsx")))
+    #expect(!InputCollector.isOwnWorkbook(URL(fileURLWithPath: "/a/Tổng hợp văn bản.docx")))
+    #expect(!InputCollector.isOwnWorkbook(URL(fileURLWithPath: "/a/thong_ke.xlsx")))
+}

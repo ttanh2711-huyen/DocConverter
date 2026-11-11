@@ -31,8 +31,10 @@ func formatArgument(format: ConversionOptions.PDFFormat, expected: String) {
 
 @Test func optionsRoundTripThroughUserDefaults() throws {
     let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
-    #expect(ConversionOptions.load(from: defaults) == ConversionOptions())
-    let options = ConversionOptions(pdfFormat: .word, location: .folder(URL(fileURLWithPath: "/tmp/Đầu ra")))
+    #expect(ConversionOptions.load(from: defaults)
+            == ConversionOptions(register: ConversionOptions.defaultRegister, batchRegister: true))
+    let options = ConversionOptions(pdfFormat: .word, location: .folder(URL(fileURLWithPath: "/tmp/Đầu ra")),
+                                    register: URL(fileURLWithPath: "/tmp/Sổ văn bản.xlsx"), batchRegister: false)
     options.save(to: defaults)
     #expect(ConversionOptions.load(from: defaults) == options)
 }
@@ -50,4 +52,18 @@ func formatArgument(format: ConversionOptions.PDFFormat, expected: String) {
     options.ocr = .init(mode: .off, engine: .ocrmac, tables: true)
     options.save(to: defaults)
     #expect(ConversionOptions.load(from: defaults).ocr == options.ocr)
+}
+
+@Test func registerArgumentAndDisabling() {
+    let book = URL(fileURLWithPath: "/Users/a/Tổng hợp văn bản.xlsx")
+    #expect(ConversionOptions(register: book).arguments
+            == ["--to", "md", "--out-mode", "beside", "--register", "/Users/a/Tổng hợp văn bản.xlsx"])
+    let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
+    defaults.set(false, forKey: ConversionOptions.Keys.registerEnabled)
+    #expect(ConversionOptions.load(from: defaults).register == nil)
+}
+
+@Test func batchRegisterFlag() {
+    #expect(ConversionOptions(batchRegister: true).arguments.last == "--batch-register")
+    #expect(!ConversionOptions().arguments.contains("--batch-register"))
 }

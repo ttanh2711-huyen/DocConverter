@@ -36,10 +36,19 @@ public enum InputCollector {
                                                        options: options)?
                 .compactMap { $0 as? URL }
                 .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+                .filter { !isOwnWorkbook($0) }
                 .map(\.standardizedFileURL)
                 .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending } ?? []
             result += files.map { InputEntry(url: $0, base: url) }
         }
         return result
+    }
+
+    /// Tệp tổng hợp do chính app tạo, hoặc tệp khoá tạm của Excel ("~$…"): bỏ qua khi quét thư mục
+    /// (giữ đồng bộ với `is_own_workbook` trong `core/src/docconv/cli.py`).
+    public static func isOwnWorkbook(_ url: URL) -> Bool {
+        let name = url.lastPathComponent.precomposedStringWithCanonicalMapping
+        return name.hasPrefix("~$")
+            || (url.pathExtension.lowercased() == "xlsx" && name.hasPrefix("Tổng hợp văn bản"))
     }
 }

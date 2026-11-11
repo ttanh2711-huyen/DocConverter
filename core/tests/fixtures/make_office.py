@@ -19,6 +19,22 @@ def make_docx(path: Path) -> None:
     d.save(path)
 
 
+def make_cong_van(path: Path) -> None:
+    """Văn bản hành chính đúng thể thức: phần đầu và phần ký trong bảng hai cột không viền."""
+    d = Document()
+    head = d.add_table(rows=2, cols=2)
+    head.cell(0, 0).text = "ỦY BAN NHÂN DÂN\nTHÀNH PHỐ CẦN THƠ"
+    head.cell(0, 1).text = "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM\nĐộc lập - Tự do - Hạnh phúc"
+    head.cell(1, 0).text = "Số: 2468/UBND-KT\nV/v rà soát quỹ đất công năm 2027"
+    head.cell(1, 1).text = "Cần Thơ, ngày 09 tháng 10 năm 2026"
+    d.add_paragraph("Kính gửi: Ủy ban nhân dân các quận, huyện.")
+    d.add_paragraph("Ủy ban nhân dân thành phố đề nghị các đơn vị rà soát quỹ đất công trên địa bàn.")
+    sign = d.add_table(rows=1, cols=2)
+    sign.cell(0, 0).text = "Nơi nhận:\n- Như trên;\n- Lưu: VT."
+    sign.cell(0, 1).text = "KT. CHỦ TỊCH\nPHÓ CHỦ TỊCH\n(Đã ký)\nTrần Việt Trường"
+    d.save(path)
+
+
 def make_xlsx(path: Path) -> None:
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -38,6 +54,7 @@ def make_pptx(path: Path) -> None:
 
 if __name__ == "__main__":
     make_docx(HERE / "quyet_dinh.docx")
+    make_cong_van(HERE / "cong_van.docx")
     make_xlsx(HERE / "thong_ke.xlsx")
     make_pptx(HERE / "ke_hoach.pptx")
     (HERE / "thong_bao.html").write_text(

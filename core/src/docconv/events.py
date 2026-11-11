@@ -23,5 +23,11 @@ class Emitter:
             print(f"Cảnh báo: {fields['message']}", file=self.err)
         elif event == "error":
             print(f"Lỗi: {fields['message']}", file=self.err)
+        elif event == "register":
+            if fields.get("error"):
+                print(f"Lỗi: {fields['error']}", file=self.err)
+            else:
+                print(f"Sổ tổng hợp: {fields['path']} (thêm {fields['added']}, cập nhật {fields['updated']})",
+                      file=self.err)
         elif event == "cancelled":
             print("Đã huỷ.", file=self.err)

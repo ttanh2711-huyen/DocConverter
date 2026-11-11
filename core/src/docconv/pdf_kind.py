@@ -14,3 +14,4 @@ def has_text_layer(pdf: Path, min_chars_per_page: int = 20) -> bool:
     doc = pdfium.PdfDocument(str(pdf))
     chars = sum(len(page.get_textpage().get_text_range().strip()) for page in doc)
     return chars >= min_chars_per_page * max(len(doc), 1)
+
